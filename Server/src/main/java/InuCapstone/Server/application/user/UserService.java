@@ -5,6 +5,7 @@ import InuCapstone.Server.domain.user.UserRepository;
 import InuCapstone.Server.dto.user.UserAddRequestDTO;
 import InuCapstone.Server.dto.user.UserFindResponseDTO;
 import InuCapstone.Server.dto.user.UserUpdateRequestDTO;
+import InuCapstone.Server.exception.user.DuplicatedUserEmailException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,8 +28,8 @@ public class UserService {
     }
 
     private void checkDuplicatedEmail(String email){
-        userRepository.findByEmail(email).ifPresent(a
-                ->{throw new IllegalStateException("해당 이메일로 가입한 이력이 있습니다.");
+        userRepository.findByEmail(email).ifPresent(a -> {
+            throw new DuplicatedUserEmailException();
         });
     }
 

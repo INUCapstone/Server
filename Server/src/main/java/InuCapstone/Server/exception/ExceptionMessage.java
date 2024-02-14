@@ -5,8 +5,8 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public enum Exception {
+public class ExceptionMessage {
 
-    USER_DUPLICATED(409);
-    private final int statusCode;
+    private Exception exception;
+    private String message;
 }
