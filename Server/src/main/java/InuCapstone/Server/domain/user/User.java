@@ -39,6 +39,6 @@ public class User {
         this.password=dto.getPassword();
     }
 
-//    @OneToMany(mappedBy = "user", cascade = CascadeType.PERSIST, orphanRemoval = true)
-//    private List<Favorite> favorites;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.PERSIST, orphanRemoval = true)
+    private List<Favorite> favorites;
 }
