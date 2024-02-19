@@ -1,5 +1,6 @@
 package InuCapstone.Server.domain.user;
 
+import InuCapstone.Server.domain.favorite.Favorite;
 import InuCapstone.Server.dto.user.UserUpdateRequestDTO;
 import jakarta.persistence.*;
 import lombok.AccessLevel;

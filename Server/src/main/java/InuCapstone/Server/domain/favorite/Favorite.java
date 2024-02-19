@@ -2,11 +2,11 @@ package InuCapstone.Server.domain.favorite;
 
 
 import InuCapstone.Server.domain.commercial.Commercial;
+import InuCapstone.Server.domain.user.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.apache.catalina.User;
 
 @Entity
 @Getter
@@ -25,6 +25,4 @@ public class Favorite {
     @ManyToOne
     @JoinColumn(name = "commercial_id")
     private Commercial commercial;
-
-
 }
