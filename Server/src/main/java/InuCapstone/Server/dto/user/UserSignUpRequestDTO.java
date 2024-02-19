@@ -4,7 +4,7 @@ import InuCapstone.Server.domain.user.User;
 import lombok.Getter;
 
 @Getter
-public class UserAddRequestDTO {
+public class UserSignUpRequestDTO {
 
     private String email;
     private String password;

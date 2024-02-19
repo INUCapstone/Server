@@ -1,7 +1,7 @@
 package InuCapstone.Server.presentation.user;
 
 import InuCapstone.Server.application.user.UserService;
-import InuCapstone.Server.dto.user.UserAddRequestDTO;
+import InuCapstone.Server.dto.user.UserSignUpRequestDTO;
 import InuCapstone.Server.dto.user.UserUpdateRequestDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,14 +15,14 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("")
-    public ResponseEntity<?> addUser(@RequestBody UserAddRequestDTO dto){
-        userService.addUser(dto);
+    public ResponseEntity<?> addUser(@RequestBody UserSignUpRequestDTO dto){
+        userService.signUp(dto);
         return ResponseEntity.ok().build();
     }
 
     @GetMapping("/{userId}")
-    public ResponseEntity<?> findUser(@PathVariable Long userId){
-        return ResponseEntity.ok().body(userService.findUser(userId));
+    public ResponseEntity<?> readUser(@PathVariable Long userId){
+        return ResponseEntity.ok().body(userService.readUser(userId));
     }
 
     @PatchMapping("/modify")

@@ -2,15 +2,14 @@ package InuCapstone.Server.application.user;
 
 import InuCapstone.Server.domain.user.User;
 import InuCapstone.Server.domain.user.UserRepository;
-import InuCapstone.Server.dto.user.UserAddRequestDTO;
-import InuCapstone.Server.dto.user.UserFindResponseDTO;
+import InuCapstone.Server.dto.user.UserSignUpRequestDTO;
+import InuCapstone.Server.dto.user.UserReadResponseDTO;
 import InuCapstone.Server.dto.user.UserUpdateRequestDTO;
-import InuCapstone.Server.exception.user.DuplicatedUserEmailException;
+import InuCapstone.Server.exception.CustomException;
+import InuCapstone.Server.exception.Status;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @Transactional(readOnly = true)
@@ -20,7 +19,7 @@ public class UserService {
     private final UserRepository userRepository;
 
     @Transactional
-    public Long addUser(UserAddRequestDTO dto){
+    public Long signUp(UserSignUpRequestDTO dto){
         checkDuplicatedEmail(dto.getEmail());
         User user = dto.toEntity();
         userRepository.save(user);
@@ -29,23 +28,22 @@ public class UserService {
 
     private void checkDuplicatedEmail(String email){
         userRepository.findByEmail(email).ifPresent(a -> {
-            throw new DuplicatedUserEmailException();
+            throw new CustomException(Status.USER_DUPLICATED);
         });
     }
 
     public User findById(Long userId){
-        return userRepository.findById(userId).orElseThrow();
+        return userRepository.findById(userId).orElseThrow(()-> new CustomException(Status.USER_NOT_EXIST));
     }
 
-    public UserFindResponseDTO findUser(Long userId){
+    public UserReadResponseDTO readUser(Long userId){
         User user = findById(userId);
-        return UserFindResponseDTO.toDTO(user);
+        return UserReadResponseDTO.toDTO(user);
     }
 
     @Transactional
     public void updateUser(UserUpdateRequestDTO dto){
         User user = findById(dto.getUserId());
-        if(user==null) throw new IllegalStateException("존재하지 않는 유저입니다.");
         user.updateUser(dto);
     }
 
