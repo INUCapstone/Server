@@ -29,6 +29,8 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	runtimeOnly 'mysql:mysql-connector-j'
 	implementation 'mysql:mysql-connector-java:8.0.26'
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 }
 
 tasks.named('test') {
