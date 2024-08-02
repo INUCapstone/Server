@@ -2,6 +2,7 @@ package com.CapStone.inu.taxi.domain.requirement;
 
 
 import com.CapStone.inu.taxi.domain.member.Member;
+import com.CapStone.inu.taxi.domain.requirement.dto.request.UpdateRequirementReq;
 import com.CapStone.inu.taxi.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -43,5 +44,12 @@ public class Requirement extends BaseEntity {
         this.departure = departure;
         this.arrival = arrival;
         this.member = member;
+    }
+
+    public void updateRequirement(UpdateRequirementReq req){
+        this.limitTime=req.getLimitTime();
+        this.limitPrice= req.getLimitPrice();
+        this.departure=req.getDeparture();
+        this.arrival=req.getArrival();
     }
 }
