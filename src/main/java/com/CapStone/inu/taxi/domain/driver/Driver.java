@@ -1,7 +1,6 @@
 package com.CapStone.inu.taxi.domain.driver;
 
 
-import com.CapStone.inu.taxi.domain.waitingroom.WaitingRoom;
 import com.CapStone.inu.taxi.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -27,15 +26,10 @@ public class Driver extends BaseEntity {
     @Column(nullable = false)
     private String name;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "room_id",nullable = false)
-    private WaitingRoom waitingRoom;
-
     @Builder
-    private Driver(String phoneNumber, String carNumber, String name, WaitingRoom waitingRoom) {
+    private Driver(String phoneNumber, String carNumber, String name) {
         this.phoneNumber = phoneNumber;
         this.carNumber = carNumber;
         this.name = name;
-        this.waitingRoom = waitingRoom;
     }
 }

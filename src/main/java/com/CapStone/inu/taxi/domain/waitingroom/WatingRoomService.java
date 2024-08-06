@@ -10,5 +10,4 @@ import org.springframework.transaction.annotation.Transactional;
 public class WatingRoomService {
     private final WaitingRoomRepository waitingRoomRepository;
 
-    public
 }
