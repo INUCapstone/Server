@@ -1,6 +1,12 @@
 package com.CapStone.inu.taxi.domain.waitingroom;
 
-import org.springframework.data.jpa.repository.JpaRepository;
+import com.CapStone.inu.taxi.global.redis.RedisRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
 
-public interface WaitingRoomRepository extends JpaRepository<WaitingRoom,Long> {
+@Repository
+@RequiredArgsConstructor
+public class WaitingRoomRepository {
+    private final RedisRepository redisRepository;
+
 }
