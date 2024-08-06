@@ -3,7 +3,7 @@ version: '3.8'
 services:
   springboot:
     container_name: springboot
-    image: ${{DOCKER_REPO}}/taxi-app:latest  # Docker Hub에서 가져올 이미지
+    image: ${DOCKER_REPO}/taxi-app:latest  # Docker Hub에서 가져올 이미지
     ports:
       - "8080:8080"
     depends_on:
