@@ -7,21 +7,21 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - mariadb
+#      - mariadb
       - redis
 
-  mariadb:
-    image: mariadb:11
-    container_name: mariadb
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    ports:
-      - "3306:3306"
-    volumes:
-      - mariadb_data:/var/lib/mysql
+#  mariadb:
+#    image: mariadb:11
+#    container_name: mariadb
+#    environment:
+#      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+#      MYSQL_DATABASE: ${MYSQL_DATABASE}
+#      MYSQL_USER: ${MYSQL_USER}
+#      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+#    ports:
+#      - "3306:3306"
+#    volumes:
+#      - mariadb_data:/var/lib/mysql
 
   redis:
     image: redis:7
@@ -32,6 +32,6 @@ services:
       - redis_data:/data
 
 volumes:
-  mariadb_data:
+#  mariadb_data:
   redis_data:
 
