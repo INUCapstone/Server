@@ -23,6 +23,7 @@ public class MemberController {
     private final MemberService memberService;
 
 
+
     @PostMapping
     public ResponseEntity<CommonResponse<Object>> signup(@RequestBody @Valid SignUpMemberReq reqDto){
         memberService.signup(reqDto);
