@@ -3,6 +3,7 @@ package com.CapStone.inu.taxi.domain.member;
 import com.CapStone.inu.taxi.domain.member.dto.request.LoginMemberReq;
 import com.CapStone.inu.taxi.domain.member.dto.request.SignUpMemberReq;
 import com.CapStone.inu.taxi.domain.member.dto.request.UpdateMemberReq;
+import com.CapStone.inu.taxi.domain.member.dto.response.LoginMemberRes;
 import com.CapStone.inu.taxi.domain.member.dto.response.MemberRes;
 import com.CapStone.inu.taxi.global.exception.CustomException;
 import com.CapStone.inu.taxi.global.security.JwtTokenProvider;
@@ -28,6 +29,8 @@ public class MemberService {
 
     @Transactional
     public void signup(SignUpMemberReq reqDto){
+        if(!reqDto.getConfirmPassword().equals(reqDto.getPassword()))
+            throw new CustomException(PASSWORD_INCORRECT);
         checkEmailDuplicated(reqDto.getEmail());
         checkNicknameDuplicated(reqDto.getNickname());
         Member member=reqDto.toEntity(passwordEncoder);
@@ -35,14 +38,14 @@ public class MemberService {
     }
 
 
-    public String login(LoginMemberReq loginMemberReq){
+    public LoginMemberRes login(LoginMemberReq loginMemberReq){
         Member member= memberRepository.findByEmail(loginMemberReq.getEmail())
                 .orElseThrow(()->new CustomException(LOGIN_ID_INVALID));
         if(!passwordEncoder.matches(loginMemberReq.getPassword(),member.getPassword())){
             throw new CustomException(PASSWORD_INVALID);
         }
 
-        return jwtTokenProvider.createAccessToken(member.getId(), member.getRole().name(),member.getNickname());
+        return new LoginMemberRes(jwtTokenProvider.createAccessToken(member.getId(), member.getRole().name(),member.getNickname()));
     }
 
     @Transactional

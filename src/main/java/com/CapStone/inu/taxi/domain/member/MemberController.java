@@ -8,7 +8,6 @@ import com.CapStone.inu.taxi.domain.member.dto.response.MemberRes;
 import com.CapStone.inu.taxi.global.common.CommonResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,6 +20,7 @@ import static com.CapStone.inu.taxi.global.common.StatusCode.*;
 @RequestMapping("/members")
 public class MemberController {
     private final MemberService memberService;
+
 
 
     @PostMapping
@@ -36,8 +36,7 @@ public class MemberController {
     public ResponseEntity<CommonResponse<Object>> login(@RequestBody @Valid LoginMemberReq signInMemberReqDto){
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.AUTHORIZATION,  memberService.login(signInMemberReqDto))
-                .body(CommonResponse.from(MEMBER_LOGIN.getMessage()));
+                .body(CommonResponse.from(MEMBER_LOGIN.getMessage(),memberService.login(signInMemberReqDto)));
     }
 
     @GetMapping
