@@ -39,6 +39,7 @@ public enum StatusCode {
     /* 400 BAD_REQUEST : 잘못된 요청 */
     LOGIN_ID_INVALID(BAD_REQUEST,"아이디가 틀렸습니다."),
     PASSWORD_INVALID(BAD_REQUEST,"비밀번호가 틀렸습니다."),
+    PASSWORD_INCORRECT(BAD_REQUEST,"비밀번호가 일치하지 않습니다."),
     INPUT_VALUE_INVALID(BAD_REQUEST,"유효하지 않은 입력입니다."),
     PROFILE_INVALID(BAD_REQUEST,"유효하지 않은 프로필 이미지입니다."),
 
