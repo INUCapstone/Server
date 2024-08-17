@@ -7,8 +7,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -19,19 +17,19 @@ public class WaitingMember extends BaseEntity {
     private Long userId;
 
     @Column(name = "start_x", nullable = false)
-    private Integer startX;
+    private Double startX;
 
     @Column(name = "start_y", nullable = false)
-    private Integer startY;
+    private Double startY;
 
     @Column(name = "end_x", nullable = false)
-    private Integer endX;
+    private Double endX;
 
     @Column(name = "end_y", nullable = false)
-    private Integer endY;
+    private Double endY;
 
     @Builder
-    private WaitingMember(Integer startX, Integer startY, Integer endX, Integer endY) {
+    private WaitingMember(Double startX, Double startY, Double endX, Double endY) {
         this.startX = startX;
         this.startY = startY;
         this.endX = endX;
