@@ -1,0 +1,98 @@
+name: CI/CD
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    #CI 파트( checkout 시 현재 경로는 클론된 리포지토리의 루트 경로이다.)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # .gitignore에 있는 properties파일 추가
+      - name: Add prod_properties
+        run: |
+          mkdir ./src/main/resources
+          touch ./src/main/resources/application-prod.properties
+          echo "${{ secrets.PROD_PROPERTIES }}" > ./src/main/resources/application-prod.properties
+
+      # .gitingnore에 있는 .env파일 docker compose 실행을 위해 추가
+      - name: Add .env
+        run: echo "${{ secrets.ENV_FILE }}" > .env
+
+      - name: Add nginx.conf
+        run: echo "${{ secrets.NGINX_CONF }}" > nginx.conf
+
+      - name: Set Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Run build with Gradle Wrapper
+        run: ./gradlew build
+
+      # taxi-app 이름을 가진 이미지 생성, docker hub에 push하기 위해
+      - name: Build Docker image
+        run: | 
+          docker build -t taxi-app .
+          docker tag taxi-app ${{ secrets.DOCKER_USER_NAME }}/${{ secrets.DOCKER_REPO }}:taxi-app
+
+      #ubuntu-latest에는 도커가 자동으로 깔려있다.
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER_NAME }}
+          password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
+
+      - name: Push the Docker image
+        run: docker push ${{ secrets.DOCKER_USER_NAME }}/${{ secrets.DOCKER_REPO }}:taxi-app
+
+      #CD 파트
+      - name: Deploy .env to EC2
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          source: .env
+          target: /home/ubuntu
+
+      - name: Deploy nginx.conf to EC2
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          source: nginx.conf
+          target: /home/ubuntu
+
+      - name: Deploy docker compose file
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          source: docker-compose.yml
+          target: /home/ubuntu
+
+      - name: pull to ec2 and start docker compose
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          script_stop: true #스크립트 실행 중 오류가 발생하면 중지
+          script: |
+            echo "${{ secrets.DOCKER_ACCESS_TOKEN }}" | docker login -u ${{ secrets.DOCKER_USER_NAME }} --password-stdin
+            docker-compose pull
+            docker-compose up -d
+

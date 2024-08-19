@@ -20,6 +20,8 @@ bin/
 ### IntelliJ IDEA ###
 application-local.properties
 application-prod.properties
+.env
+nginx.conf
 
 .idea
 *.iws
