@@ -33,6 +33,7 @@ public class MemberService {
             throw new CustomException(PASSWORD_INCORRECT);
         checkEmailDuplicated(reqDto.getEmail());
         checkNicknameDuplicated(reqDto.getNickname());
+        checkPhoneNumberDuplicated(reqDto.getPhoneNumber());
         Member member=reqDto.toEntity(passwordEncoder);
         memberRepository.save(member);
     }
@@ -70,6 +71,11 @@ public class MemberService {
 
     private void checkNicknameDuplicated(String nickname){
         if(memberRepository.existsByNickname(nickname))
+            throw new CustomException(NICKNAME_DUPLICATED);
+    }
+
+    private void checkPhoneNumberDuplicated(String phoneNumber){
+        if(memberRepository.existsByNickname(phoneNumber))
             throw new CustomException(NICKNAME_DUPLICATED);
     }
 

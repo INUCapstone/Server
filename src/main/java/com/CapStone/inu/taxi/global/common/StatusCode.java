@@ -62,7 +62,8 @@ public enum StatusCode {
     /* 409 CONFLICT : 리소스 충돌 */
     EMAIL_DUPLICATED(CONFLICT,"이미 존재하는 이메일입니다."),
     NICKNAME_DUPLICATED(CONFLICT,"이미 존재하는 닉네임입니다."),
-    ROOM_DUPLICATED(CONFLICT,"이미 채팅방에 존재하는 멤버입니다.");
+    ROOM_DUPLICATED(CONFLICT,"이미 채팅방에 존재하는 멤버입니다."),
+    PHONE_NUMBER_DUPLICATED(CONFLICT,"이미 존재하는 휴대폰 번호입니다.");
 
 
     private final HttpStatus status;
