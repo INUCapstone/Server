@@ -1,7 +1,9 @@
 package com.CapStone.inu.taxi.global.config;
 
+import org.redisson.Redisson;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,7 +27,15 @@ public class Redis {
     @Value("${spring.data.redis.port}")
     private int port;
 
+    private static final String REDISSON_HOST_PREFIX = "redis://";
 
+    @Bean
+    public RedissonClient redissonClient(){
+        Config config = new Config();
+        config.useSingleServer().setAddress(REDISSON_HOST_PREFIX + host + ":" + port);
+
+        return Redisson.create(config);
+    }
     // Redis 와의 연결을 위한 'Connection'을 생성
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
@@ -58,7 +68,7 @@ public class Redis {
     // Redis 캐시 매니저 설정
     //GenericJackson2JsonRedisSerializer()을 통해 json으로 직렬화 하면 객체의 패키지 정보까지 저장한다.
     @Bean
-    public CacheManager cacheManager() {
+    public RedisCacheManager cacheManager() {
         // Redis 캐시의 기본 구성. 이 기본 구성은 기본 직렬화 방식과 캐시 만료 정책 등을 포함
         // 캐시의 key,value 직렬화 방법 설정
         RedisCacheConfiguration cacheConfig = RedisCacheConfiguration.defaultCacheConfig()
