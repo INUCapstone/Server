@@ -1,5 +1,6 @@
 package com.CapStone.inu.taxi.domain.member;
 
+import com.CapStone.inu.taxi.domain.member.dto.request.ChargePointReq;
 import com.CapStone.inu.taxi.domain.member.dto.request.LoginMemberReq;
 import com.CapStone.inu.taxi.domain.member.dto.request.SignUpMemberReq;
 import com.CapStone.inu.taxi.domain.member.dto.request.UpdateMemberReq;
@@ -61,6 +62,13 @@ public class MemberService {
     public void deleteMember(Long memberId){
         Member member=findByMemberId(memberId);
         memberRepository.deleteById(member.getId());
+    }
+
+    @Transactional
+    public MemberRes chargePoint(Long memberId, ChargePointReq chargePointReq){
+        Member member=findByMemberId(memberId);
+        member.chargePoint(chargePointReq.getPoint());
+        return MemberRes.from(member);
     }
 
 

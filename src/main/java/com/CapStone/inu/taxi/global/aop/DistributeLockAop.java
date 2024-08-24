@@ -1,6 +1,8 @@
 package com.CapStone.inu.taxi.global.aop;
 
 import com.CapStone.inu.taxi.global.annotation.DistributeLock;
+import com.CapStone.inu.taxi.global.common.StatusCode;
+import com.CapStone.inu.taxi.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -46,11 +48,10 @@ public class DistributeLockAop {
 
             log.info("get lock success {}" , key);
             return aopForTransaction.proceed(joinPoint); // 독립된 트랜잭션으로 비지니스 로직 실행
-        } catch (Exception e) {
-            Thread.currentThread().interrupt();
-            throw new InterruptedException();
+        } catch (InterruptedException e) {
+            throw new CustomException(StatusCode.LOCK_ACQUISITION_TOO_MANY_REQUESTS); // 락 획득 실패 시 예외처리
         } finally {
-            rLock.unlock();    // (6)
+            rLock.unlock();
         }
     }
 }
