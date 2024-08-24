@@ -61,6 +61,7 @@ public class Member extends BaseEntity implements UserDetails {
         this.password=password;
     }
     public void changeNickname(String nickname){ this.nickname=nickname;}
+    public void chargePoint(Integer point){this.point+=point;}
 
     //grantedAuthority는 부여된 권한을 갖는 인터페이스,SimpleGrantedAuthority는 granteAuthority를 구현한 간단한 클래스
     //"ROLE_USER", "ROLE_ADMIN"과 같은 권한을 나타내는 문자열을 SimpleGrantedAuthority 객체로 생성하여 사용할 수 있다.

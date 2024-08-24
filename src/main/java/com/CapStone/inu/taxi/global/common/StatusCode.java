@@ -63,7 +63,10 @@ public enum StatusCode {
     EMAIL_DUPLICATED(CONFLICT,"이미 존재하는 이메일입니다."),
     NICKNAME_DUPLICATED(CONFLICT,"이미 존재하는 닉네임입니다."),
     ROOM_DUPLICATED(CONFLICT,"이미 채팅방에 존재하는 멤버입니다."),
-    PHONE_NUMBER_DUPLICATED(CONFLICT,"이미 존재하는 휴대폰 번호입니다.");
+    PHONE_NUMBER_DUPLICATED(CONFLICT,"이미 존재하는 휴대폰 번호입니다."),
+
+    /* 429 TOO MANY REQUESTS : 요청이 많아 처리할 수 없음 */
+    LOCK_ACQUISITION_TOO_MANY_REQUESTS(TOO_MANY_REQUESTS, "락 획득 시도가 너무 많습니다. 잠시 후 다시 시도하세요.");
 
 
     private final HttpStatus status;
