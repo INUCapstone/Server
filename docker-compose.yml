@@ -58,7 +58,7 @@ services:
       TZ: "Asia/Seoul"
     depends_on:
       - springboot-1
-      - springboot-2
+#      - springboot-2
 
 volumes:
 #  mariadb_data:
