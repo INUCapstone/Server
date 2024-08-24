@@ -1,6 +1,7 @@
 package com.CapStone.inu.taxi.domain.member;
 
 
+import com.CapStone.inu.taxi.domain.member.dto.request.ChargePointReq;
 import com.CapStone.inu.taxi.domain.member.dto.request.LoginMemberReq;
 import com.CapStone.inu.taxi.domain.member.dto.request.SignUpMemberReq;
 import com.CapStone.inu.taxi.domain.member.dto.request.UpdateMemberReq;
@@ -47,11 +48,18 @@ public class MemberController {
                 .body(CommonResponse.from(MEMBER_FOUND.getMessage(),memberService.getMember(memberId)));
     }
 
-   @PatchMapping
+    @PatchMapping
     public ResponseEntity<CommonResponse<MemberRes>> updateMember(Principal principal, @RequestBody @Valid UpdateMemberReq updateMemberReq){
         Long memberId=Long.parseLong(principal.getName());
         return ResponseEntity.ok()
                 .body(CommonResponse.from(MEMBER_UPDATE.getMessage(),memberService.updateMember(memberId, updateMemberReq)));
+    }
+
+    @PatchMapping(value = "/point")
+    public ResponseEntity<CommonResponse<MemberRes>> chargePoint(Principal principal, @RequestBody @Valid ChargePointReq chargePointReq){
+        Long memberId=Long.parseLong(principal.getName());
+        return ResponseEntity.ok()
+                .body(CommonResponse.from(MEMBER_UPDATE.getMessage(),memberService.chargePoint(memberId, chargePointReq)));
     }
 
     @DeleteMapping
