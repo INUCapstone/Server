@@ -59,7 +59,7 @@ public class MemberController {
     public ResponseEntity<CommonResponse<MemberRes>> chargePoint(Principal principal, @RequestBody @Valid ChargePointReq chargePointReq){
         Long memberId=Long.parseLong(principal.getName());
         return ResponseEntity.ok()
-                .body(CommonResponse.from(MEMBER_UPDATE.getMessage(),memberService.chargePoint(memberId, chargePointReq)));
+                .body(CommonResponse.from(MEMBER_CHARGE_POINT.getMessage(),memberService.chargePoint(memberId, chargePointReq)));
     }
 
     @DeleteMapping
