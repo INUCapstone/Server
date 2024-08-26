@@ -1,6 +1,6 @@
 package com.CapStone.inu.taxi.domain.member.dto.request;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ChargePointReq {
 
-    @NotBlank(message = "point는 필수 입력 값입니다.")
+    @NotNull(message = "point는 필수 입력 값입니다.")
     private Integer point;
 
 }

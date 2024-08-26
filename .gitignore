@@ -22,6 +22,7 @@ application-local.properties
 application-prod.properties
 .env
 nginx.conf
+local/
 
 .idea
 *.iws
