@@ -14,6 +14,9 @@ public class UpdateMemberReq {
             , regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*#?&])[A-Za-z\\d@$!%*#?&]{8,}$")
     private String password;
 
+    @NotBlank(message = "비밀번호 확인은 필수 입력 값입니다.")
+    private String confirmPassword;
+
 
     @NotBlank(message = "nickname은 필수 입력 값입니다.")
     @Pattern(regexp = "^[가-힣a-zA-Z0-9]{2,10}$" , message = "닉네임은 특수문자를 포함하지 않은 2~10자리여야 합니다.")

@@ -1,5 +1,6 @@
 package com.CapStone.inu.taxi.domain.member;
 
+import com.CapStone.inu.taxi.domain.member.dto.request.ChargePointReq;
 import com.CapStone.inu.taxi.domain.member.dto.request.LoginMemberReq;
 import com.CapStone.inu.taxi.domain.member.dto.request.SignUpMemberReq;
 import com.CapStone.inu.taxi.domain.member.dto.request.UpdateMemberReq;
@@ -33,6 +34,7 @@ public class MemberService {
             throw new CustomException(PASSWORD_INCORRECT);
         checkEmailDuplicated(reqDto.getEmail());
         checkNicknameDuplicated(reqDto.getNickname());
+        checkPhoneNumberDuplicated(reqDto.getPhoneNumber());
         Member member=reqDto.toEntity(passwordEncoder);
         memberRepository.save(member);
     }
@@ -62,6 +64,13 @@ public class MemberService {
         memberRepository.deleteById(member.getId());
     }
 
+    @Transactional
+    public MemberRes chargePoint(Long memberId, ChargePointReq chargePointReq){
+        Member member=findByMemberId(memberId);
+        member.chargePoint(chargePointReq.getPoint());
+        return MemberRes.from(member);
+    }
+
 
     private void checkEmailDuplicated(String email){
         if(memberRepository.existsByEmail(email))
@@ -70,6 +79,11 @@ public class MemberService {
 
     private void checkNicknameDuplicated(String nickname){
         if(memberRepository.existsByNickname(nickname))
+            throw new CustomException(NICKNAME_DUPLICATED);
+    }
+
+    private void checkPhoneNumberDuplicated(String phoneNumber){
+        if(memberRepository.existsByNickname(phoneNumber))
             throw new CustomException(NICKNAME_DUPLICATED);
     }
 
