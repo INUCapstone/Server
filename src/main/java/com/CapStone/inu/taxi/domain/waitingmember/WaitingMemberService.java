@@ -12,7 +12,7 @@ import java.util.*;
 public class WaitingMemberService {
     private final WaitingMemberRepository waitingMemberRepository;
 
-    //go에 포함된 유저들이 택시를 타고 떠났다.
+    //유저들이 모두 레디를 마쳐 택시를 타고 떠났다.
     @Transactional
     public void depart(List<Long> go) {
         //대기 목록에서 지우기
@@ -22,7 +22,7 @@ public class WaitingMemberService {
         }
     }
 
-    //한 유저가 매칭 시도를 취소했다.
+    //유저가 매칭을 취소했다.
     @Transactional
     public void cancel(Long userId) {
         WaitingMember deletedUser = waitingMemberRepository.findById(userId).orElseThrow(IllegalArgumentException::new);

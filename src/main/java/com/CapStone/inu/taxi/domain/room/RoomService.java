@@ -24,10 +24,9 @@ public class RoomService {
 
     private final WaitingMemberService waitingMemberService;
     private final WaitingMemberRepository waitingMemberRepository;
-    private final RoomRepository roomRepository;
     private final DriverRepository driverRepository;
 
-
+    //Key: userId, value: 해당 유저와 매칭에 성공한 상대 유저 목록
     private HashMap<Long, HashSet<Long>> matched_2 = new HashMap<>();
     private HashMap<Long, HashSet<Pair<Long, Long>>> matched_3 = new HashMap<>();
     private HashMap<Long, HashSet<List<Long>>> matched_4 = new HashMap<>();
@@ -35,6 +34,7 @@ public class RoomService {
     @Value("${kakao.api.key}")
     private String kakaoApiKey;
 
+    //kakao api요청을 보내서, 택시 경로, 비용, 시간 등을 응답받아 리턴.
     public ResponseEntity<String> getDirection(Map<String, Object> requestPayload) {
         String url = "https://apis-navi.kakaomobility.com/v1/waypoints/directions";
 
@@ -56,6 +56,7 @@ public class RoomService {
         );
     }
 
+    //kakao api에 택시를 함께 탈 멤버 리스트를 요청 호출 방식에 맞게 작성.
     public Map<String, Object> makePayload(List<WaitingMember> memberList) {
         //일단 아무 기사님이나 데려왔고, 택시가 임의의 순서로 멤버에게 간다고 치자.
         //todo: 나중에 각 멤버 중 가장 가까이 있는 기사님으로 바꿔야 하고, 누구부터 데려가서 누구부터 내려줄지 정해야함.
@@ -138,6 +139,7 @@ public class RoomService {
         return EARTH_RADIUS * c;
     }
 
+    //테스트용 코드
     public void test_print(WaitingMember A, WaitingMember B, double A_range, double B_range,
                            double start_distance, double end_distance, LocalDateTime now) {
         System.out.println("A: " + A.getUserId() + " / " + A.getStartX() + "," + A.getStartY() +
@@ -152,6 +154,7 @@ public class RoomService {
         System.out.println();
     }
 
+    //매칭이 성공한 시점에, 방 생성.
     public void makeRoom(ResponseEntity<String> responseEntity, List<WaitingMember> memberList) {
         System.out.println("hi " + responseEntity);
 //        Room room = Room.builder()
@@ -161,12 +164,13 @@ public class RoomService {
 //        roomRepository.save(room);
     }
 
+    /*유저 매칭 시도.
+    1. 매칭 시도 버튼을 누른 시점을 기준으로 탐색 범위를 넓혀나가면서, 서로 탐색 범위에 들어온 두 유저는 매칭에 성공함.
+    2. A-B가 매칭에 성공하면 방을 생성하고, A-B-C 매칭도 성공했는지 추가로 확인.
+    3. 마찬가지로 A-B-C가 매칭에 성공하면 A-B-C-D가 매칭에 성공했는지 추가로 확인.
+    * */
     public void matchUser() {
         List<WaitingMember> waitingMembers = waitingMemberRepository.findAll();
-
-        /*.add() 함수 호출하는 부분마다, 프론트한테 매칭됐다고 알려주고, db에 넣어야함.
-        그리고, n명이 매칭되면 n-1명인 매칭들은 지우라고 알려줘야함.
-        * */
 
         int n = waitingMembers.size();
 
@@ -282,6 +286,7 @@ public class RoomService {
 //        System.out.println("[4]: sz : " + matched_4.size() + " / " + matched_4);
     }
 
+    //유저들이 모두 레디를 마쳐 택시를 타고 떠났다.
     @Transactional
     public void depart(List<Long> go, Long driverId) {
         Driver driver = driverRepository.findById(driverId).orElseThrow(IllegalArgumentException::new);
@@ -297,6 +302,7 @@ public class RoomService {
         matched_4.forEach((key, value) -> value.removeIf(userIds -> userIds.stream().anyMatch(go::contains)));
     }
 
+    //유저가 매칭을 취소했다.
     @Transactional
     public void cancel(Long userId) {
 
