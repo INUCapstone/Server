@@ -1,15 +1,10 @@
 package com.CapStone.inu.taxi.domain.room;
 
-import com.CapStone.inu.taxi.domain.waitingmember.WaitingMember;
 import com.CapStone.inu.taxi.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.http.ResponseEntity;
-
-import java.util.List;
 
 @Entity
 @Getter
@@ -22,6 +17,8 @@ public class Room extends BaseEntity {
 
     @Column(name = "matched_user_list", nullable = false)
     private String matchedUserList;
+
+    //유저들의 레디 여부도 저장해야겠다.
 
     @Column(name = "taxi_fare", nullable = false)
     private Integer taxiFare;
