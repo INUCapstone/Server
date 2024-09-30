@@ -15,6 +15,7 @@ public enum StatusCode {
     MEMBER_CREATE(CREATED,"회원 가입 완료"),
     MEMBER_FOUND(OK,"멤버 조회 완료"),
     MEMBER_UPDATE(OK,"멤버 수정 완료"),
+    MEMBER_CHARGE_POINT(OK,"멤버 포인트 충전 완료"),
     MEMBER_DELETE(OK,"회원탈퇴 완료"),
     MEMBER_PROFILE_UPLOAD(OK,"멤버 프로필 이미지 업로드 완료"),
     MEMBER_PROFILE_DELETE(OK,"멤버 프로필 이미지 삭제 완료"),
