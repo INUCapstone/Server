@@ -13,8 +13,7 @@ import lombok.NoArgsConstructor;
 public class WaitingMember extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long userId;
+    private Long id;
 
     @Column(name = "start_x", nullable = false)
     private Double startX;
@@ -29,7 +28,8 @@ public class WaitingMember extends BaseEntity {
     private Double endY;
 
     @Builder
-    private WaitingMember(Double startX, Double startY, Double endX, Double endY) {
+    private WaitingMember(Long id, Double startX, Double startY, Double endX, Double endY) {
+        this.id=id;
         this.startX = startX;
         this.startY = startY;
         this.endX = endX;
