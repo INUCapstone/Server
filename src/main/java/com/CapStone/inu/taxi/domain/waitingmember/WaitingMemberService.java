@@ -2,8 +2,14 @@ package com.CapStone.inu.taxi.domain.waitingmember;
 
 import com.CapStone.inu.taxi.domain.driver.Driver;
 import com.CapStone.inu.taxi.domain.driver.DriverRepository;
+import com.CapStone.inu.taxi.domain.member.Member;
+import com.CapStone.inu.taxi.domain.member.MemberRepository;
+import com.CapStone.inu.taxi.domain.room.Room;
 import com.CapStone.inu.taxi.domain.room.RoomRepository;
+import com.CapStone.inu.taxi.domain.room.dto.kakao.*;
+import com.CapStone.inu.taxi.domain.room.dto.response.RoomRes;
 import com.CapStone.inu.taxi.domain.waitingmember.dto.WaitingMemberReqDto;
+import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
@@ -24,6 +30,7 @@ public class WaitingMemberService {
     private final WaitingMemberRepository waitingMemberRepository;
     private final RoomRepository roomRepository;
     private final DriverRepository driverRepository;
+    private final MemberRepository memberRepository;
     private final SimpMessagingTemplate template;
 
     //Key: userId, value: 해당 유저와 매칭에 성공한 상대 유저 목록
@@ -51,9 +58,11 @@ public class WaitingMemberService {
 
         // 외부 API로부터 받은 응답 반환
 
-        return restTemplate.exchange(
+        ResponseEntity<String> response = restTemplate.exchange(
                 url, HttpMethod.POST, entity, String.class
         );
+        //System.out.println(response);
+        return response;
     }
 
     //kakao api에 택시를 함께 탈 멤버 리스트를 요청 호출 방식에 맞게 작성.
@@ -154,14 +163,60 @@ public class WaitingMemberService {
         System.out.println();
     }
 
-    //매칭이 성공한 시점에, 방 생성.
+    //매칭이 성공한 시점에 방 생성, 생성된 정보를 프론트에 넘겨줌.
     public void makeRoom(ResponseEntity<String> responseEntity, List<WaitingMember> memberList) {
-        System.out.println("hi " + responseEntity);
-//        Room room = Room.builder()
-//                .responseEntity(responseEntity)
-//                .memberList(memberList)
-//                .build();
-//        roomRepository.save(room);
+
+        Gson gson = new Gson();
+        Route route = gson.fromJson(responseEntity.getBody(), ApiResponse.class).getRoutes()[0];//1가지 경로만 탐색함.(getRoutes()[0])
+
+        List<pathInfo> pathInfoList = new ArrayList<>();
+        for (Section section : route.getSections()) {
+            for (Road road : section.getRoads()) {
+                Double[] vertexes = road.getVertexes();
+                for (int i = 0; i < vertexes.length; i += 2) {
+                    double x = vertexes[i], y = vertexes[i + 1];
+                    pathInfo waypoint = new pathInfo();
+                    waypoint.setX(x);
+                    waypoint.setY(y);
+                    pathInfoList.add(waypoint);
+                }
+            }
+        }
+
+        Integer fare = route.getSummary().getFare().getTaxi() + route.getSummary().getFare().getToll();
+        Integer duration = route.getSummary().getDuration();
+
+        Room room = Room.builder()
+                .taxiFare(fare)
+                .taxiDuration(duration)
+                .taxiPath(gson.toJson(pathInfoList))
+                .taxiHeadcount(memberList.size())
+                .driverId(null)
+                .waitingMemberList(memberList)
+                .build();
+
+        roomRepository.save(room);
+
+        List<memberInfo> memberInfoList = new ArrayList<>();
+        for (WaitingMember waitingMember : memberList) {
+            Member member = memberRepository.findById(waitingMember.getId()).orElseThrow(IllegalArgumentException::new);
+            memberInfo memberInfo = new memberInfo();
+            memberInfo.setNickname(member.getNickname());
+            memberInfo.setMemberId(member.getId());
+            memberInfo.setIsReady(false);
+            memberInfoList.add(memberInfo);
+        }
+
+        RoomRes roomRes = RoomRes.builder()
+                .roomId(room.getRoomId())
+                .currentMemberCnt(memberList.size())
+                .pathInfoList(pathInfoList)
+                .time(duration)
+                .charge(fare)
+                .memberList(memberInfoList)
+                .isDelete(room.getIsDelete())
+                .isStart(room.getIsStart())
+                .build();
     }
 
     /*유저 매칭 시도.
@@ -287,8 +342,8 @@ public class WaitingMemberService {
     }
 
     @Transactional
-    public void startMatching(Long memberId, WaitingMemberReqDto waitingMemberReqDto){
-        WaitingMember member= waitingMemberReqDto.toEntity(memberId);
+    public void startMatching(Long memberId, WaitingMemberReqDto waitingMemberReqDto) {
+        WaitingMember member = waitingMemberReqDto.toEntity(memberId);
         waitingMemberRepository.save(member);
         matchUser();
     }
