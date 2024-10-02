@@ -16,9 +16,11 @@ import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 public class WaitingMemberController {
     private final WaitingMemberService waitingMemberService;
 
+    // 경로는 pub/match/{memberId}로 메세지를 보내야한다.
     @MessageMapping("match/{memberId}")
     public void startMatching(@DestinationVariable Long memberId, @Payload WaitingMemberReqDto waitingMemberReqDto){
         waitingMemberService.createWaitingMember(memberId,waitingMemberReqDto);
+        waitingMemberService.matchUser(memberId);
 
     }
 
