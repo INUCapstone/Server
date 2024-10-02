@@ -35,6 +35,7 @@ public class WebSocketPreHandler implements ChannelInterceptor {
                 Authentication authentication=jwtTokenProvider.getAuthentication(accessToken);
                 headerAccessor.setUser(authentication);
                 headerAccessor.getSessionAttributes().put("nickname",jwtTokenProvider.getNickname(accessToken));
+                headerAccessor.getSessionAttributes().put("memberId",jwtTokenProvider.getMemberId(accessToken));
 
                 return message;
             }

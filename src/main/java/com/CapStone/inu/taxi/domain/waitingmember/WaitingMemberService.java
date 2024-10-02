@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
 import org.springframework.http.*;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -225,6 +226,7 @@ public class WaitingMemberService {
     2. A-B가 매칭에 성공하면 방을 생성하고, A-B-C 매칭도 성공했는지 추가로 확인.
     3. 마찬가지로 A-B-C가 매칭에 성공하면 A-B-C-D가 매칭에 성공했는지 추가로 확인.
     * */
+    @Async
     public void matchUser(Long userId) {
         List<WaitingMember> waitingMembers = waitingMemberRepository.findAll();
         List<RoomRes> roomResArrayList = new ArrayList<>();
@@ -349,7 +351,7 @@ public class WaitingMemberService {
     }
 
     @Transactional
-    public void startMatching(Long memberId, WaitingMemberReqDto waitingMemberReqDto) {
+    public void createWaitingMember(Long memberId, WaitingMemberReqDto waitingMemberReqDto) {
         WaitingMember member = waitingMemberReqDto.toEntity(memberId);
         waitingMemberRepository.save(member);
     }
@@ -377,9 +379,8 @@ public class WaitingMemberService {
 
     //유저가 매칭을 취소했다.
     @Transactional
-    public void cancel(Long userId) {
-        WaitingMember deletedUser = waitingMemberRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
-        waitingMemberRepository.delete(deletedUser);
+    public void cancelMatching(Long userId) {
+         waitingMemberRepository.deleteById(userId);
 
         matched_2.forEach((key, value) -> value.removeIf(userId::equals));
         matched_3.forEach((key, value) -> value.removeIf(userIds ->
