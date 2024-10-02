@@ -34,6 +34,6 @@ public class WaitingMemberController {
 
     @GetMapping(value = "/test")
     public void test() {
-        waitingMemberService.matchUser();
+        waitingMemberService.matchUser(1L);
     }
 }

@@ -2,8 +2,19 @@ package com.CapStone.inu.taxi.domain.waitingmember;
 
 import com.CapStone.inu.taxi.domain.driver.Driver;
 import com.CapStone.inu.taxi.domain.driver.DriverRepository;
+import com.CapStone.inu.taxi.domain.member.Member;
+import com.CapStone.inu.taxi.domain.member.MemberRepository;
+import com.CapStone.inu.taxi.domain.room.Room;
 import com.CapStone.inu.taxi.domain.room.RoomRepository;
+<<<<<<< HEAD
 import com.CapStone.inu.taxi.domain.waitingmember.dto.request.WaitingMemberReqDto;
+=======
+import com.CapStone.inu.taxi.domain.room.dto.kakao.*;
+import com.CapStone.inu.taxi.domain.room.dto.response.RoomRes;
+import com.CapStone.inu.taxi.domain.room.dto.response.RoomResList;
+import com.CapStone.inu.taxi.domain.waitingmember.dto.WaitingMemberReqDto;
+import com.google.gson.Gson;
+>>>>>>> 07051dc307e62ee19b7504d5aaa634ba71112fc0
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
@@ -25,6 +36,7 @@ public class WaitingMemberService {
     private final WaitingMemberRepository waitingMemberRepository;
     private final RoomRepository roomRepository;
     private final DriverRepository driverRepository;
+    private final MemberRepository memberRepository;
     private final SimpMessagingTemplate template;
 
     //Key: userId, value: 해당 유저와 매칭에 성공한 상대 유저 목록
@@ -52,9 +64,11 @@ public class WaitingMemberService {
 
         // 외부 API로부터 받은 응답 반환
 
-        return restTemplate.exchange(
+        ResponseEntity<String> response = restTemplate.exchange(
                 url, HttpMethod.POST, entity, String.class
         );
+        //System.out.println(response);
+        return response;
     }
 
     //kakao api에 택시를 함께 탈 멤버 리스트를 요청 호출 방식에 맞게 작성.
@@ -155,14 +169,60 @@ public class WaitingMemberService {
         System.out.println();
     }
 
-    //매칭이 성공한 시점에, 방 생성.
-    public void makeRoom(ResponseEntity<String> responseEntity, List<WaitingMember> memberList) {
-        System.out.println("hi " + responseEntity);
-//        Room room = Room.builder()
-//                .responseEntity(responseEntity)
-//                .memberList(memberList)
-//                .build();
-//        roomRepository.save(room);
+    //매칭이 성공한 시점에 방 생성, 생성된 정보를 프론트에 넘겨줌.
+    public RoomRes makeRoom(ResponseEntity<String> responseEntity, List<WaitingMember> memberList) {
+
+        Gson gson = new Gson();
+        Route route = gson.fromJson(responseEntity.getBody(), ApiResponse.class).getRoutes()[0];//1가지 경로만 탐색함.(getRoutes()[0])
+
+        List<pathInfo> pathInfoList = new ArrayList<>();
+        for (Section section : route.getSections()) {
+            for (Road road : section.getRoads()) {
+                Double[] vertexes = road.getVertexes();
+                for (int i = 0; i < vertexes.length; i += 2) {
+                    double x = vertexes[i], y = vertexes[i + 1];
+                    pathInfo waypoint = new pathInfo();
+                    waypoint.setX(x);
+                    waypoint.setY(y);
+                    pathInfoList.add(waypoint);
+                }
+            }
+        }
+
+        Integer fare = route.getSummary().getFare().getTaxi() + route.getSummary().getFare().getToll();
+        Integer duration = route.getSummary().getDuration();
+
+        Room room = Room.builder()
+                .taxiFare(fare)
+                .taxiDuration(duration)
+                .taxiPath(gson.toJson(pathInfoList))
+                .taxiHeadcount(memberList.size())
+                .driverId(null)
+                .waitingMemberList(memberList)
+                .build();
+
+        roomRepository.save(room);
+
+        List<memberInfo> memberInfoList = new ArrayList<>();
+        for (WaitingMember waitingMember : memberList) {
+            Member member = memberRepository.findById(waitingMember.getId()).orElseThrow(IllegalArgumentException::new);
+            memberInfo memberInfo = new memberInfo();
+            memberInfo.setNickname(member.getNickname());
+            memberInfo.setMemberId(member.getId());
+            memberInfo.setIsReady(false);
+            memberInfoList.add(memberInfo);
+        }
+
+        return RoomRes.builder()
+                .roomId(room.getRoomId())
+                .currentMemberCnt(memberList.size())
+                .pathInfoList(pathInfoList)
+                .time(duration)
+                .charge(fare)
+                .memberList(memberInfoList)
+                .isDelete(room.getIsDelete())
+                .isStart(room.getIsStart())
+                .build();
     }
 
     /*유저 매칭 시도.
@@ -170,119 +230,127 @@ public class WaitingMemberService {
     2. A-B가 매칭에 성공하면 방을 생성하고, A-B-C 매칭도 성공했는지 추가로 확인.
     3. 마찬가지로 A-B-C가 매칭에 성공하면 A-B-C-D가 매칭에 성공했는지 추가로 확인.
     * */
+<<<<<<< HEAD
     @Async
     public void matchUser() {
+=======
+    public void matchUser(Long userId) {
+>>>>>>> 07051dc307e62ee19b7504d5aaa634ba71112fc0
         List<WaitingMember> waitingMembers = waitingMemberRepository.findAll();
+        List<RoomRes> roomResArrayList = new ArrayList<>();
 
         int n = waitingMembers.size();
+        WaitingMember A = waitingMemberRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
 
-        for (int i = 0; i < n; i++)
-            for (int j = i + 1; j < n; j++) {
-                WaitingMember A = waitingMembers.get(i), B = waitingMembers.get(j);
-                Long A_Id = A.getId(), B_Id = B.getId();
+        for (int j = 0; j < n; j++) {
+            WaitingMember B = waitingMembers.get(j);
+            if(A.equals(B))continue;
+            Long A_Id = A.getId(), B_Id = B.getId();
 
-                if (!matched_2.containsKey(A_Id)) matched_2.put(A_Id, new HashSet<>());
-                //이미 a-b가 매칭되어있으므로, 또 검사할 필요 없음.
-                if (matched_2.get(A_Id).contains(B_Id)) continue;
+            if (!matched_2.containsKey(A_Id)) matched_2.put(A_Id, new HashSet<>());
+            //이미 a-b가 매칭되어있으므로, 또 검사할 필요 없음.
+            if (matched_2.get(A_Id).contains(B_Id)) continue;
 
-                double start_distance = HaversineCalculator(A, B, "start");
-                double end_distance = HaversineCalculator(A, B, "end");
+            double start_distance = HaversineCalculator(A, B, "start");
+            double end_distance = HaversineCalculator(A, B, "end");
 
-                //초당 weight m씩 반경을 넓혀가며 상대방을 찾음.
-                LocalDateTime now = LocalDateTime.now();
-                double weight = (double) 0.003 / (double) 1000;
-                double A_range = Duration.between(waitingMembers.get(i).getCreatedDate(), now).getSeconds() * weight;
-                double B_range = Duration.between(waitingMembers.get(j).getCreatedDate(), now).getSeconds() * weight;
+            //초당 weight m씩 반경을 넓혀가며 상대방을 찾음.
+            LocalDateTime now = LocalDateTime.now();
+            double weight = (double) 0.003 / (double) 1000;
+            double A_range = Duration.between(A.getCreatedDate(), now).getSeconds() * weight;
+            double B_range = Duration.between(B.getCreatedDate(), now).getSeconds() * weight;
 
-                boolean match_success = A_range >= start_distance && B_range >= start_distance
-                        && A_range >= end_distance && B_range >= end_distance;
+            boolean match_success = A_range >= start_distance && B_range >= start_distance
+                    && A_range >= end_distance && B_range >= end_distance;
 
-                //test_print(A, B, A_range, B_range, start_distance, end_distance, now);
+            //test_print(A, B, A_range, B_range, start_distance, end_distance, now);
 
-                //a-b 매칭 성공
-                if (match_success) {
-                    List<WaitingMember> memberList = new ArrayList<>();
-                    memberList.add(A);
-                    memberList.add(B);
-                    ResponseEntity<String> responseEntity = getDirection(makePayload(memberList));
-                    makeRoom(responseEntity, memberList);
+            //a-b 매칭 성공
+            if (match_success) {
+                List<WaitingMember> memberList = new ArrayList<>();
+                memberList.add(A);
+                memberList.add(B);
+                ResponseEntity<String> responseEntity = getDirection(makePayload(memberList));
+                roomResArrayList.add(makeRoom(responseEntity, memberList));
 
-                    //if (!matched_2.containsKey(A_Id)) matched_2.put(A_Id, new HashSet<>());
-                    matched_2.get(A_Id).add(B_Id);
+                //if (!matched_2.containsKey(A_Id)) matched_2.put(A_Id, new HashSet<>());
+                matched_2.get(A_Id).add(B_Id);
 
-                    if (!matched_2.containsKey(B_Id)) matched_2.put(B_Id, new HashSet<>());
-                    matched_2.get(B_Id).add(A_Id);
+                if (!matched_2.containsKey(B_Id)) matched_2.put(B_Id, new HashSet<>());
+                matched_2.get(B_Id).add(A_Id);
 
-                    //(a<->b), (b<->c), (c<->a)인 경우 확인.
-                    for (Long C_Id : matched_2.get(A_Id)) {
-                        //if (!matched_2.containsKey(B_Id)) matched_2.put(B_Id, new HashSet<>());
-                        if (!matched_2.get(B_Id).contains(C_Id)) continue;
+                //(a<->b), (b<->c), (c<->a)인 경우 확인.
+                for (Long C_Id : matched_2.get(A_Id)) {
+                    //if (!matched_2.containsKey(B_Id)) matched_2.put(B_Id, new HashSet<>());
+                    if (!matched_2.get(B_Id).contains(C_Id)) continue;
 
-                        Pair<Long, Long> bc = Pair.of(Math.min(B_Id, C_Id), Math.max(B_Id, C_Id));
-                        if (!matched_3.containsKey(A_Id)) matched_3.put(A_Id, new HashSet<>());
+                    Pair<Long, Long> bc = Pair.of(Math.min(B_Id, C_Id), Math.max(B_Id, C_Id));
+                    if (!matched_3.containsKey(A_Id)) matched_3.put(A_Id, new HashSet<>());
 
-                        //이미 a-b-c는 매칭되어있었음. todo: a-b가 이번에 처음 매칭됐기 때문에 이 코드는 필요없는것 같다. 검토 필요
-                        //if (matched_3.get(A_Id).contains(bc)) continue;
+                    //이미 a-b-c는 매칭되어있었음. todo: a-b가 이번에 처음 매칭됐기 때문에 이 코드는 필요없는것 같다. 검토 필요
+                    //if (matched_3.get(A_Id).contains(bc)) continue;
 
-                        //a-b-c 매칭 성공
-                        WaitingMember C = waitingMemberRepository.findById(C_Id).orElseThrow(IllegalArgumentException::new);
-                        while (memberList.size() > 2) memberList.remove(memberList.size() - 1);
-                        memberList.add(C);
-                        getDirection(makePayload(memberList));
+                    //a-b-c 매칭 성공
+                    WaitingMember C = waitingMemberRepository.findById(C_Id).orElseThrow(IllegalArgumentException::new);
+                    while (memberList.size() > 2) memberList.remove(memberList.size() - 1);
+                    memberList.add(C);
+                    responseEntity = getDirection(makePayload(memberList));
+                    roomResArrayList.add(makeRoom(responseEntity, memberList));
 
-                        //if (!matched_3.containsKey(A_Id)) matched_3.put(A_Id, new HashSet<>());
-                        matched_3.get(A_Id).add(bc);
+                    //if (!matched_3.containsKey(A_Id)) matched_3.put(A_Id, new HashSet<>());
+                    matched_3.get(A_Id).add(bc);
 
-                        Pair<Long, Long> ac = Pair.of(Math.min(A_Id, C_Id), Math.max(A_Id, C_Id));
-                        if (!matched_3.containsKey(B_Id)) matched_3.put(B_Id, new HashSet<>());
-                        matched_3.get(B_Id).add(ac);
+                    Pair<Long, Long> ac = Pair.of(Math.min(A_Id, C_Id), Math.max(A_Id, C_Id));
+                    if (!matched_3.containsKey(B_Id)) matched_3.put(B_Id, new HashSet<>());
+                    matched_3.get(B_Id).add(ac);
 
-                        Pair<Long, Long> ab = Pair.of(Math.min(A_Id, B_Id), Math.max(A_Id, B_Id));
-                        if (!matched_3.containsKey(C_Id)) matched_3.put(C_Id, new HashSet<>());
-                        matched_3.get(C_Id).add(ab);
+                    Pair<Long, Long> ab = Pair.of(Math.min(A_Id, B_Id), Math.max(A_Id, B_Id));
+                    if (!matched_3.containsKey(C_Id)) matched_3.put(C_Id, new HashSet<>());
+                    matched_3.get(C_Id).add(ab);
 
-                        //(a<->b), (a<->c), (a<->d), (b<->c), (b<->d), (c<->d)인 경우 확인.
-                        //a,b,c는 이미 한 묶음이므로, (a<->d), (b<->d), (c<->d)만 확인하면 된다. 이건 (a<->cd), (b<->cd)만 확인하면 된다.
-                        for (Pair<Long, Long> cd : matched_3.get(A_Id)) {
-                            //if (!matched_3.containsKey(B_Id)) matched_3.put(B_Id, new HashSet<>());
-                            if (!matched_3.get(B_Id).contains(cd)) continue;
-                            Long D_Id;
-                            if (!cd.getFirst().equals(C_Id)) D_Id = cd.getFirst();
-                            else D_Id = cd.getSecond();
+                    //(a<->b), (a<->c), (a<->d), (b<->c), (b<->d), (c<->d)인 경우 확인.
+                    //a,b,c는 이미 한 묶음이므로, (a<->d), (b<->d), (c<->d)만 확인하면 된다. 이건 (a<->cd), (b<->cd)만 확인하면 된다.
+                    for (Pair<Long, Long> cd : matched_3.get(A_Id)) {
+                        //if (!matched_3.containsKey(B_Id)) matched_3.put(B_Id, new HashSet<>());
+                        if (!matched_3.get(B_Id).contains(cd)) continue;
+                        Long D_Id;
+                        if (!cd.getFirst().equals(C_Id)) D_Id = cd.getFirst();
+                        else D_Id = cd.getSecond();
 
-                            List<Long> bcd = new ArrayList<>(List.of(B_Id, C_Id, D_Id));
-                            Collections.sort(bcd);
-                            if (!matched_4.containsKey(A_Id)) matched_4.put(A_Id, new HashSet<>());
-                            //이미 a-b-c-d는 매칭되어있었음.todo: a-b가 이번에 처음 매칭됐기 때문에 이 코드도 필요없는것 같다. 검토 필요
-                            //if (matched_4.get(A_Id).contains(bcd)) continue;
+                        List<Long> bcd = new ArrayList<>(List.of(B_Id, C_Id, D_Id));
+                        Collections.sort(bcd);
+                        if (!matched_4.containsKey(A_Id)) matched_4.put(A_Id, new HashSet<>());
+                        //이미 a-b-c-d는 매칭되어있었음.todo: a-b가 이번에 처음 매칭됐기 때문에 이 코드도 필요없는것 같다. 검토 필요
+                        //if (matched_4.get(A_Id).contains(bcd)) continue;
 
-                            //a-b-c-d 매칭 성공
-                            WaitingMember D = waitingMemberRepository.findById(D_Id).orElseThrow(IllegalArgumentException::new);
-                            while (memberList.size() > 3) memberList.remove(memberList.size() - 1);
-                            memberList.add(D);
-                            getDirection(makePayload(memberList));
+                        //a-b-c-d 매칭 성공
+                        WaitingMember D = waitingMemberRepository.findById(D_Id).orElseThrow(IllegalArgumentException::new);
+                        while (memberList.size() > 3) memberList.remove(memberList.size() - 1);
+                        memberList.add(D);
+                        responseEntity = getDirection(makePayload(memberList));
+                        roomResArrayList.add(makeRoom(responseEntity, memberList));
 
-                            //if (!matched_4.containsKey(A_Id)) matched_4.put(A_Id, new HashSet<>());
-                            matched_4.get(A_Id).add(bcd);
+                        //if (!matched_4.containsKey(A_Id)) matched_4.put(A_Id, new HashSet<>());
+                        matched_4.get(A_Id).add(bcd);
 
-                            List<Long> acd = new ArrayList<>(List.of(A_Id, C_Id, D_Id));
-                            Collections.sort(acd);
-                            if (!matched_4.containsKey(B_Id)) matched_4.put(B_Id, new HashSet<>());
-                            matched_4.get(B_Id).add(acd);
+                        List<Long> acd = new ArrayList<>(List.of(A_Id, C_Id, D_Id));
+                        Collections.sort(acd);
+                        if (!matched_4.containsKey(B_Id)) matched_4.put(B_Id, new HashSet<>());
+                        matched_4.get(B_Id).add(acd);
 
-                            List<Long> abd = new ArrayList<>(List.of(A_Id, B_Id, D_Id));
-                            Collections.sort(abd);
-                            if (!matched_4.containsKey(C_Id)) matched_4.put(C_Id, new HashSet<>());
-                            matched_4.get(C_Id).add(abd);
+                        List<Long> abd = new ArrayList<>(List.of(A_Id, B_Id, D_Id));
+                        Collections.sort(abd);
+                        if (!matched_4.containsKey(C_Id)) matched_4.put(C_Id, new HashSet<>());
+                        matched_4.get(C_Id).add(abd);
 
-                            List<Long> abc = new ArrayList<>(List.of(A_Id, B_Id, C_Id));
-                            Collections.sort(abc);
-                            if (!matched_4.containsKey(D_Id)) matched_4.put(D_Id, new HashSet<>());
-                            matched_4.get(D_Id).add(abc);
-                        }
+                        List<Long> abc = new ArrayList<>(List.of(A_Id, B_Id, C_Id));
+                        Collections.sort(abc);
+                        if (!matched_4.containsKey(D_Id)) matched_4.put(D_Id, new HashSet<>());
+                        matched_4.get(D_Id).add(abc);
                     }
                 }
             }
+<<<<<<< HEAD
         template.convertAndSend("wefw", );
 //        System.out.println("[2]: sz : " + matched_2.size() + " / " + matched_2);
 //        System.out.println("[3]: sz : " + matched_3.size() + " / " + matched_3);
@@ -298,6 +366,20 @@ public class WaitingMemberService {
     @Transactional
     public void startMatching(){
 
+=======
+        }
+        RoomResList roomResList = RoomResList.builder()
+                .roomResList(roomResArrayList)
+                .build();
+
+        System.out.println(roomResList);
+    }
+
+    @Transactional
+    public void startMatching(Long memberId, WaitingMemberReqDto waitingMemberReqDto) {
+        WaitingMember member = waitingMemberReqDto.toEntity(memberId);
+        waitingMemberRepository.save(member);
+>>>>>>> 07051dc307e62ee19b7504d5aaa634ba71112fc0
     }
 
 
