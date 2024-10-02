@@ -1,4 +1,4 @@
-package com.CapStone.inu.taxi.domain.waitingmember.dto;
+package com.CapStone.inu.taxi.domain.waitingmember.dto.request;
 
 import com.CapStone.inu.taxi.domain.waitingmember.WaitingMember;
 import lombok.Builder;
