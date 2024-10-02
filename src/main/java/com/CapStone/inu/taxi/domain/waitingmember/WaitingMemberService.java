@@ -8,10 +8,11 @@ import com.CapStone.inu.taxi.domain.room.Room;
 import com.CapStone.inu.taxi.domain.room.RoomRepository;
 import com.CapStone.inu.taxi.domain.room.dto.kakao.*;
 import com.CapStone.inu.taxi.domain.room.dto.response.RoomRes;
-import com.CapStone.inu.taxi.domain.room.dto.response.RoomResList;
 import com.CapStone.inu.taxi.domain.waitingmember.dto.WaitingMemberReqDto;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
 import org.springframework.http.*;
@@ -28,6 +29,7 @@ import java.util.*;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
+@Log4j2
 public class WaitingMemberService {
     private final WaitingMemberRepository waitingMemberRepository;
     private final RoomRepository roomRepository;
@@ -233,7 +235,7 @@ public class WaitingMemberService {
                 break;
             else{
                 List<WaitingMember> waitingMembers = waitingMemberRepository.findAll();
-                List<RoomRes> roomResArrayList = new ArrayList<>();
+                List<RoomRes> roomResList = new ArrayList<>();
 
                 int n = waitingMembers.size();
                 WaitingMember A = waitingMemberRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
@@ -267,7 +269,7 @@ public class WaitingMemberService {
                         memberList.add(A);
                         memberList.add(B);
                         ResponseEntity<String> responseEntity = getDirection(makePayload(memberList));
-                        roomResArrayList.add(makeRoom(responseEntity, memberList));
+                        roomResList.add(makeRoom(responseEntity, memberList));
 
                         //if (!matched_2.containsKey(A_Id)) matched_2.put(A_Id, new HashSet<>());
                         matched_2.get(A_Id).add(B_Id);
@@ -291,7 +293,7 @@ public class WaitingMemberService {
                             while (memberList.size() > 2) memberList.remove(memberList.size() - 1);
                             memberList.add(C);
                             responseEntity = getDirection(makePayload(memberList));
-                            roomResArrayList.add(makeRoom(responseEntity, memberList));
+                            roomResList.add(makeRoom(responseEntity, memberList));
 
                             //if (!matched_3.containsKey(A_Id)) matched_3.put(A_Id, new HashSet<>());
                             matched_3.get(A_Id).add(bc);
@@ -324,7 +326,7 @@ public class WaitingMemberService {
                                 while (memberList.size() > 3) memberList.remove(memberList.size() - 1);
                                 memberList.add(D);
                                 responseEntity = getDirection(makePayload(memberList));
-                                roomResArrayList.add(makeRoom(responseEntity, memberList));
+                                roomResList.add(makeRoom(responseEntity, memberList));
 
                                 //if (!matched_4.containsKey(A_Id)) matched_4.put(A_Id, new HashSet<>());
                                 matched_4.get(A_Id).add(bcd);
@@ -347,9 +349,16 @@ public class WaitingMemberService {
                         }
                     }
                 }
-                RoomResList roomResList = RoomResList.builder()
-                        .roomResList(roomResArrayList)
-                        .build();
+
+                List<pathInfo> pathInfoList = roomResList.get(0).getPathInfoList();
+                List<memberInfo> memberInfoList = roomResList.get(0).getMemberList();
+
+                Gson gson = new Gson();
+                String tmp = gson.toJson(pathInfoList);
+                log.info(tmp);
+                log.info(gson.toJson(memberInfoList));
+
+                System.out.println(roomResList.get(0).getCharge().intValue());
 
                 template.convertAndSend("sub/member/"+ userId,roomResList);
 
@@ -363,6 +372,30 @@ public class WaitingMemberService {
                 }
             }
         }
+    }
+
+    public void Test(){
+        Gson gson = new Gson();
+        List<RoomRes> roomResList = new ArrayList<>();
+        String json = "[{\"x\":127.10991634747967,\"y\":37.39447145478345},{\"x\":127.10966790676201,\"y\":37.394469584427156},{\"x\":127.10966790676201,\"y\":37.394469584427156},{\"x\":127.10967141980313,\"y\":37.39512739646385},{\"x\":127.10968100356395,\"y\":37.396226781360426},{\"x\":127.10967417816033,\"y\":37.39775855885587},{\"x\":127.10967417816033,\"y\":37.39775855885587}]";
+        List<pathInfo> pathInfoList = gson.fromJson(json,List.class);
+
+        json = "[{\"nickname\":\"Templar\",\"memberId\":1,\"isReady\":false},{\"nickname\":\"Knight\",\"memberId\":2,\"isReady\":true}]";
+
+
+        RoomRes roomRes = RoomRes.builder()
+                .roomId(1L)
+                .currentMemberCnt(2)
+                .pathInfoList(pathInfoList)
+                .time(1000)
+                .charge(10000)
+                .memberList(gson.fromJson(json,List.class))
+                .isDelete(false)
+                .isStart(false)
+                .build();
+
+        roomResList.add(roomRes);
+        template.convertAndSend("sub/member/"+ 1L,roomResList);
     }
 
     @Transactional
