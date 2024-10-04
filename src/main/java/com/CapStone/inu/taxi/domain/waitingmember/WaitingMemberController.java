@@ -20,7 +20,7 @@ public class WaitingMemberController {
     @MessageMapping("match/{memberId}")
     public void startMatching(@DestinationVariable Long memberId, @Payload WaitingMemberReqDto waitingMemberReqDto){
         waitingMemberService.createWaitingMember(memberId,waitingMemberReqDto);
-        waitingMemberService.matchUser(memberId);
+        waitingMemberService.Test();
 
     }
 
@@ -35,7 +35,7 @@ public class WaitingMemberController {
 
     }
 
-        @GetMapping(value = "/test")
+    @GetMapping(value = "/test")
     public void test() {
         waitingMemberService.Test();
     }
