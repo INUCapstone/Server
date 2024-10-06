@@ -1,6 +1,7 @@
 package com.CapStone.inu.taxi.domain.room;
 
 import com.CapStone.inu.taxi.domain.waitingmember.WaitingMember;
+import com.CapStone.inu.taxi.domain.waitingmemberRoom.WaitingMemberRoom;
 import com.CapStone.inu.taxi.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -42,6 +43,9 @@ public class Room extends BaseEntity {
 
     @OneToMany(mappedBy = "room", cascade = CascadeType.PERSIST, orphanRemoval = true)
     private List<WaitingMember> waitingMemberList;
+
+    @OneToMany(mappedBy = "room", fetch = FetchType.LAZY)
+    private List<WaitingMemberRoom> waitingMemberRoomList;
 
     @Builder
     private Room(Integer taxiFare, Integer taxiDuration, String taxiPath, Integer taxiHeadcount,
