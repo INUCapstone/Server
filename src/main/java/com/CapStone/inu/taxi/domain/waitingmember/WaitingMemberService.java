@@ -359,7 +359,7 @@ public class WaitingMemberService {
 
                 System.out.println(roomResList.get(0).getCharge().intValue());
 
-                template.convertAndSend("sub/member/"+ userId,roomResList);
+                template.convertAndSend("/sub/member/"+ userId,roomResList);
 
                 // 매칭 시도를 위한 잠시 대기
                 try {
