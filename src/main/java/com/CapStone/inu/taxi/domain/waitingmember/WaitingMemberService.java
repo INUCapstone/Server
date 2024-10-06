@@ -11,7 +11,6 @@ import com.CapStone.inu.taxi.domain.room.dto.response.RoomRes;
 import com.CapStone.inu.taxi.domain.waitingmember.dto.WaitingMemberReqDto;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
@@ -396,7 +395,7 @@ public class WaitingMemberService {
 
         roomResList.add(roomRes);
         log.info("메시지 응답 반환 전");
-        template.convertAndSend("sub/member/"+ 1L,roomResList);
+        template.convertAndSend("/sub/member/"+ 1L,roomResList);
         log.info("메시지 응답 반환 후");
     }
 
