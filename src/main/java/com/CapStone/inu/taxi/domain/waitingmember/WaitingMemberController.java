@@ -30,7 +30,7 @@ public class WaitingMemberController {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
 
         // 세션 속성에서 memberId를 가져옵니다.
-        Long memberId = (Long) headerAccessor.getSessionAttributes().get("memberId");
+        Long memberId = Long.parseLong((String) headerAccessor.getSessionAttributes().get("memberId"));
         waitingMemberService.cancelMatching(memberId);
 
     }
