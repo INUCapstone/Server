@@ -1,12 +1,15 @@
 package com.CapStone.inu.taxi.domain.waitingmember;
 
-import com.CapStone.inu.taxi.domain.room.Room;
+import com.CapStone.inu.taxi.domain.waitingmemberRoom.WaitingMemberRoom;
 import com.CapStone.inu.taxi.global.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -28,9 +31,6 @@ public class WaitingMember extends BaseEntity {
     @Column(name = "end_y", nullable = false)
     private Double endY;
 
-    @Column(name = "is_ready", nullable = false)
-    private Boolean isReady;
-
     @Builder
     private WaitingMember(Long id, Double startX, Double startY, Double endX, Double endY) {
         this.id=id;
@@ -38,10 +38,8 @@ public class WaitingMember extends BaseEntity {
         this.startY = startY;
         this.endX = endX;
         this.endY = endY;
-        isReady = false;
     }
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "roomId")
-    private Room room;
+    @OneToMany(mappedBy = "waitingMember", fetch = FetchType.LAZY)
+    private List<WaitingMemberRoom> waitingMemberRoomList=new ArrayList<>();
 }
