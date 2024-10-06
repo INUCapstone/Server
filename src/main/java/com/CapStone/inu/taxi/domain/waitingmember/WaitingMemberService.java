@@ -397,7 +397,7 @@ public class WaitingMemberService {
         roomResList.add(roomRes);
         log.info("메시지 응답 반환 전");
         template.convertAndSend("sub/member/"+ 1L,roomResList);
-        log.info("메시지 응답 반환 후")
+        log.info("메시지 응답 반환 후");
     }
 
     @Transactional
