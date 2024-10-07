@@ -24,7 +24,7 @@ public class WaitingMemberController {
         log.info("웹소켓 연결 성공");
         waitingMemberService.createWaitingMember(memberId,waitingMemberReqDto);
         log.info("Waiting Member 생성 성공");
-        waitingMemberService.Test();
+        waitingMemberService.matchUser(memberId);
 
 
     }
