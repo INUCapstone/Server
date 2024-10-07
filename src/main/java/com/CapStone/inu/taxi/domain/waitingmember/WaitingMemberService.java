@@ -9,6 +9,8 @@ import com.CapStone.inu.taxi.domain.room.RoomRepository;
 import com.CapStone.inu.taxi.domain.room.dto.kakao.*;
 import com.CapStone.inu.taxi.domain.room.dto.response.RoomRes;
 import com.CapStone.inu.taxi.domain.waitingmember.dto.WaitingMemberReqDto;
+import com.CapStone.inu.taxi.domain.waitingmemberRoom.WaitingMemberRoom;
+import com.CapStone.inu.taxi.domain.waitingmemberRoom.WaitingMemberRoomRepository;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -31,6 +33,7 @@ import java.util.*;
 @Log4j2
 public class WaitingMemberService {
     private final WaitingMemberRepository waitingMemberRepository;
+    private final WaitingMemberRoomRepository waitingMemberRoomRepository;
     private final RoomRepository roomRepository;
     private final DriverRepository driverRepository;
     private final MemberRepository memberRepository;
@@ -199,6 +202,12 @@ public class WaitingMemberService {
 
         roomRepository.save(room);
 
+        //waitingmemberroom 만들기. memberList사람수만큼.
+        for (WaitingMember waitingMember : memberList) {
+            WaitingMemberRoom waitingMemberRoom = new WaitingMemberRoom(waitingMember, room);
+            waitingMemberRoomRepository.save(waitingMemberRoom);
+        }
+
         log.info("방 생성 완료");
 
         List<memberInfo> memberInfoList = new ArrayList<>();
@@ -230,10 +239,10 @@ public class WaitingMemberService {
     * */
     @Async
     public void matchUser(Long userId) {
-        while(true){
-            if(!waitingMemberRepository.existsById(userId))
+        while (true) {
+            if (!waitingMemberRepository.existsById(userId))
                 break;
-            else{
+            else {
                 List<WaitingMember> waitingMembers = waitingMemberRepository.findAll();
                 List<RoomRes> roomResList = new ArrayList<>();
 
@@ -242,7 +251,7 @@ public class WaitingMemberService {
 
                 for (int j = 0; j < n; j++) {
                     WaitingMember B = waitingMembers.get(j);
-                    if(A.equals(B))continue;
+                    if (A.equals(B)) continue;
                     Long A_Id = A.getId(), B_Id = B.getId();
 
                     if (!matched_2.containsKey(A_Id)) matched_2.put(A_Id, new HashSet<>());
@@ -360,7 +369,7 @@ public class WaitingMemberService {
 
                 System.out.println(roomResList.get(0).getCharge().intValue());
 
-                template.convertAndSend("/sub/member/"+ userId,roomResList);
+                template.convertAndSend("/sub/member/" + userId, roomResList);
 
                 // 매칭 시도를 위한 잠시 대기
                 try {
@@ -374,11 +383,11 @@ public class WaitingMemberService {
         }
     }
 
-    public void Test(){
+    public void Test() {
         Gson gson = new Gson();
         List<RoomRes> roomResList = new ArrayList<>();
         String json = "[{\"x\":127.10991634747967,\"y\":37.39447145478345},{\"x\":127.10966790676201,\"y\":37.394469584427156},{\"x\":127.10966790676201,\"y\":37.394469584427156},{\"x\":127.10967141980313,\"y\":37.39512739646385},{\"x\":127.10968100356395,\"y\":37.396226781360426},{\"x\":127.10967417816033,\"y\":37.39775855885587},{\"x\":127.10967417816033,\"y\":37.39775855885587}]";
-        List<pathInfo> pathInfoList = gson.fromJson(json,List.class);
+        List<pathInfo> pathInfoList = gson.fromJson(json, List.class);
 
         json = "[{\"nickname\":\"Templar\",\"memberId\":1,\"isReady\":false},{\"nickname\":\"Knight\",\"memberId\":2,\"isReady\":true}]";
 
@@ -389,21 +398,21 @@ public class WaitingMemberService {
                 .pathInfoList(pathInfoList)
                 .time(1000)
                 .charge(10000)
-                .memberList(gson.fromJson(json,List.class))
+                .memberList(gson.fromJson(json, List.class))
                 .isDelete(false)
                 .isStart(false)
                 .build();
 
         roomResList.add(roomRes);
         log.info("메시지 응답 반환 전");
-        template.convertAndSend("/sub/member/"+ 1L,roomResList);
+        template.convertAndSend("/sub/member/" + 1L, roomResList);
         log.info("메시지 응답 반환 후");
     }
 
     @Transactional
     public void createWaitingMember(Long memberId, WaitingMemberReqDto waitingMemberReqDto) {
         WaitingMember member = waitingMemberReqDto.toEntity(memberId);
-        if(!waitingMemberRepository.existsById(memberId))
+        if (!waitingMemberRepository.existsById(memberId))
             waitingMemberRepository.save(member);
     }
 
@@ -431,7 +440,7 @@ public class WaitingMemberService {
     //유저가 매칭을 취소했다.
     @Transactional
     public void cancelMatching(Long userId) {
-         waitingMemberRepository.deleteById(userId);
+        waitingMemberRepository.deleteById(userId);
 
         matched_2.forEach((key, value) -> value.removeIf(userId::equals));
         matched_3.forEach((key, value) -> value.removeIf(userIds ->

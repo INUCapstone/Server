@@ -42,7 +42,7 @@ public class Room extends BaseEntity {
     private Boolean isDelete;
 
     @OneToMany(mappedBy = "room", fetch = FetchType.LAZY)
-    private List<WaitingMemberRoom> waitingMemberRoomList=new ArrayList<>();
+    private List<WaitingMemberRoom> waitingMemberRoomList = new ArrayList<>();
 
     @Builder
     private Room(Integer taxiFare, Integer taxiDuration, String taxiPath, Integer taxiHeadcount,
