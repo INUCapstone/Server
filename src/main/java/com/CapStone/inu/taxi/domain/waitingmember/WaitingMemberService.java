@@ -73,35 +73,94 @@ public class WaitingMemberService {
 
     //kakao api에 택시를 함께 탈 멤버 리스트를 요청 호출 방식에 맞게 작성.
     public Map<String, Object> makePayload(List<WaitingMember> memberList) {
-        //일단 아무 기사님이나 데려왔고, 택시가 임의의 순서로 멤버에게 간다고 치자.
-        //todo: 나중에 각 멤버 중 가장 가까이 있는 기사님으로 바꿔야 하고, 누구부터 데려가서 누구부터 내려줄지 정해야함.
-        Double driver_x = 127.11023403583478, driver_y = 37.39434769502827;
 
         Map<String, Object> requestPayload = new HashMap<>();
+        List<WaitingMember> optimalRoute = new ArrayList<>();
 
-        Map<String, Double> origin = new HashMap<>();
-        origin.put("x", driver_x); // 출발지 경도
-        origin.put("y", driver_y); // 출발지 위도
+        //1. 4명의 출발지 - 도착지 쌍이 제일 가까운 두 명을 고른다. (출발지쪽 a, 도착지쪽 b)
+        //2. a에서 가까운순으로 4명을 방문, b에서 가까운순으로 4명을 방문한다.
+        //3. a의 방문순서 역순으로, b의 방문순서 정순으로 택시가 움직인다.
 
-        int n = memberList.size();
+        Double minDistance = Double.MAX_VALUE;
+
+        Pair<WaitingMember, WaitingMember> startEndPair = memberList.stream()
+                .flatMap(A -> memberList.stream().map(B -> Pair.of(A, B))) // 모든 A, B 쌍 생성
+                .min(Comparator.comparingDouble(pair -> HaversineCalculator(pair.getFirst(), pair.getSecond(), "start_end"))) // 가장 가까운 쌍 찾기
+                .orElse(null);
+
+        WaitingMember startMember = startEndPair.getFirst();
+        WaitingMember endMember = startEndPair.getSecond();
+
+        //BFS
+        List<WaitingMember> visited = new ArrayList<>();
+        WaitingMember currentMember = startMember;
+        visited.add(currentMember);
+
+        while (visited.size() < memberList.size()) {
+            WaitingMember nextMember = null;
+            minDistance = Double.MAX_VALUE;
+
+            // 가장 가까운 멤버 찾기
+            for (WaitingMember waitingMember : memberList) {
+                if (!visited.contains(waitingMember)) {
+                    Double distance = HaversineCalculator(currentMember, waitingMember, "start");
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        nextMember = waitingMember;
+                    }
+                }
+            }
+
+            // 찾은 멤버를 방문 리스트에 추가하고, 현재 멤버로 설정
+            visited.add(nextMember);
+            currentMember = nextMember;
+        }
+
+        Collections.reverse(visited);
+        optimalRoute.addAll(visited);
+
+        visited.clear();
+        currentMember = endMember;
+        visited.add(currentMember);
+
+        while (visited.size() < memberList.size()) {
+            WaitingMember nextMember = null;
+            minDistance = Double.MAX_VALUE;
+
+            // 가장 가까운 멤버 찾기
+            for (WaitingMember waitingMember : memberList) {
+                if (!visited.contains(waitingMember)) {
+                    Double distance = HaversineCalculator(currentMember, waitingMember, "end");
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        nextMember = waitingMember;
+                    }
+                }
+            }
+
+            // 찾은 멤버를 방문 리스트에 추가하고, 현재 멤버로 설정
+            visited.add(nextMember);
+            currentMember = nextMember;
+        }
+
+        optimalRoute.addAll(visited);
+
+        System.out.println(optimalRoute);
 
         List<Map<String, Double>> waypoints = new ArrayList<>();
-        for (int i = 0; i < n; i++) {
+
+        for (WaitingMember waitingMember : visited) {
             Map<String, Double> waypoint = new HashMap<>();
-            waypoint.put("x", memberList.get(i).getStartX());
-            waypoint.put("y", memberList.get(i).getStartY());
-            waypoints.add(waypoint);
-        }
-        for (int i = 0; i < n - 1; i++) {
-            Map<String, Double> waypoint = new HashMap<>();
-            waypoint.put("x", memberList.get(i).getEndX());
-            waypoint.put("y", memberList.get(i).getEndY());
+            waypoint.put("x", waitingMember.getStartX());
+            waypoint.put("y", waitingMember.getStartY());
             waypoints.add(waypoint);
         }
 
-        Map<String, Double> destination = new HashMap<>();
-        destination.put("x", memberList.get(n - 1).getEndX());
-        destination.put("y", memberList.get(n - 1).getEndY());
+        Map<String, Double> destination = waypoints.get(waypoints.size() - 1);
+        waypoints.remove(waypoints.size() - 1);
+        Map<String, Double> origin = waypoints.get(0);
+        waypoints.remove(0);
+
 
         requestPayload.put("origin", origin);
         requestPayload.put("destination", destination);
@@ -131,9 +190,14 @@ public class WaitingMemberService {
             A_longitude = A.getStartX();
             B_latitude = B.getStartY();
             B_longitude = B.getStartX();
-        } else {// if (command.equals("end"))
+        } else if (command.equals("end")) {
             A_latitude = A.getEndY();
             A_longitude = A.getEndX();
+            B_latitude = B.getEndY();
+            B_longitude = B.getEndX();
+        } else { //if (command.equals("start_end")) {
+            A_latitude = A.getStartY();
+            A_longitude = A.getStartX();
             B_latitude = B.getEndY();
             B_longitude = B.getEndX();
         }
