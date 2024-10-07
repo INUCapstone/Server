@@ -195,7 +195,6 @@ public class WaitingMemberService {
                 .taxiPath(gson.toJson(pathInfoList))
                 .taxiHeadcount(memberList.size())
                 .driverId(null)
-                .waitingMemberList(memberList)
                 .build();
 
         roomRepository.save(room);
