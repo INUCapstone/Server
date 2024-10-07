@@ -168,7 +168,7 @@ public class WaitingMemberService {
 
     //매칭이 성공한 시점에 방 생성, 생성된 정보를 프론트에 넘겨줌.
     public RoomRes makeRoom(ResponseEntity<String> responseEntity, List<WaitingMember> memberList) {
-
+        log.info("방생성 로직 시작");
         Gson gson = new Gson();
         Route route = gson.fromJson(responseEntity.getBody(), ApiResponse.class).getRoutes()[0];//1가지 경로만 탐색함.(getRoutes()[0])
 
@@ -198,6 +198,8 @@ public class WaitingMemberService {
                 .build();
 
         roomRepository.save(room);
+
+        log.info("방 생성 완료");
 
         List<memberInfo> memberInfoList = new ArrayList<>();
         for (WaitingMember waitingMember : memberList) {
