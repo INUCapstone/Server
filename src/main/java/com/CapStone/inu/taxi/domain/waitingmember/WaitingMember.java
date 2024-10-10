@@ -33,13 +33,13 @@ public class WaitingMember extends BaseEntity {
 
     @Builder
     private WaitingMember(Long id, Double startX, Double startY, Double endX, Double endY) {
-        this.id=id;
+        this.id = id;
         this.startX = startX;
         this.startY = startY;
         this.endX = endX;
         this.endY = endY;
     }
 
-    @OneToMany(mappedBy = "waitingMember", fetch = FetchType.LAZY)
-    private List<WaitingMemberRoom> waitingMemberRoomList=new ArrayList<>();
+    @OneToMany(mappedBy = "waitingMember", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<WaitingMemberRoom> waitingMemberRoomList = new ArrayList<>();
 }
