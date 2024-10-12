@@ -10,6 +10,7 @@ import com.CapStone.inu.taxi.domain.waitingmember.WaitingMember;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ import java.util.List;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
+@Slf4j
 public class WaitingMemberRoomService {
 
     private final WaitingMemberRoomRepository waitingMemberRoomRepository;
@@ -35,7 +37,7 @@ public class WaitingMemberRoomService {
         List<RoomRes> roomResList = new ArrayList<>();
 
         //이거 고쳐야될지도.
-        List<WaitingMemberRoom> waitingMemberRoomList = waitingMemberRoomRepository.findByWaitingMember(userId);
+        List<WaitingMemberRoom> waitingMemberRoomList = waitingMemberRoomRepository.findByWaitingMember_Id(userId);
 
         for(WaitingMemberRoom waitingMemberRoom : waitingMemberRoomList){
             Room room = waitingMemberRoom.getRoom();
@@ -53,18 +55,20 @@ public class WaitingMemberRoomService {
                 memberInfo.setMemberId(member.getId());
                 memberInfo.setIsReady(false);
                 memberInfoList.add(memberInfo);
+                log.info("member name logging : " + member.getNickname());
             }
 
-            //역직렬화.
-            Gson gson = new Gson();
-            Type listType = new TypeToken<List<pathInfo>>(){}.getType();
 
-            List<pathInfo> pathInfoList = gson.fromJson(room.getTaxiPath(), listType);
+            //역직렬화.
+//            Gson gson = new Gson();
+//            Type listType = new TypeToken<List<pathInfo>>(){}.getType();
+//
+//            List<pathInfo> pathInfoList = gson.fromJson(room.getTaxiPath(), listType);
 
             RoomRes roomRes = RoomRes.builder()
                     .roomId(room.getRoomId())
                     .currentMemberCnt(memberList.size())
-                    .pathInfoList(pathInfoList)
+                    .pathInfoList(new ArrayList<>())
                     .time(room.getTaxiDuration())
                     .charge(room.getTaxiFare())
                     .memberList(memberInfoList)
@@ -72,8 +76,9 @@ public class WaitingMemberRoomService {
                     .isStart(room.getIsStart())
                     .build();
 
-            roomResList.add(roomRes);
+                    roomResList.add(roomRes);
         }
+
 
         return roomResList;
     }

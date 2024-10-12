@@ -40,6 +40,6 @@ public class WaitingMember extends BaseEntity {
         this.endY = endY;
     }
 
-    @OneToMany(mappedBy = "waitingMember", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "waitingMember", fetch = FetchType.LAZY)
     private List<WaitingMemberRoom> waitingMemberRoomList = new ArrayList<>();
 }

@@ -1,10 +1,6 @@
 package com.CapStone.inu.taxi.domain.room;
 
-import com.CapStone.inu.taxi.domain.driver.DriverRepository;
-import com.CapStone.inu.taxi.domain.member.Member;
-import com.CapStone.inu.taxi.domain.member.MemberRepository;
 import com.CapStone.inu.taxi.domain.room.dto.kakao.*;
-import com.CapStone.inu.taxi.domain.room.dto.response.RoomRes;
 import com.CapStone.inu.taxi.domain.waitingmember.WaitingMember;
 import com.CapStone.inu.taxi.domain.waitingmember.WaitingMemberRepository;
 import com.CapStone.inu.taxi.domain.waitingmemberRoom.WaitingMemberRoom;
@@ -13,7 +9,6 @@ import com.CapStone.inu.taxi.domain.waitingmemberRoom.WaitingMemberRoomService;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
 import org.springframework.http.*;
@@ -35,8 +30,6 @@ public class RoomService {
     private final WaitingMemberRepository waitingMemberRepository;
     private final RoomRepository roomRepository;
     private final WaitingMemberRoomRepository waitingMemberRoomRepository;
-    private final MemberRepository memberRepository;
-    private final DriverRepository driverRepository;
     private final SimpMessagingTemplate template;
     private final WaitingMemberRoomService waitingMemberRoomService;
 
@@ -271,13 +264,13 @@ public class RoomService {
             if (!waitingMemberRepository.existsById(userId))
                 break;
             List<WaitingMember> waitingMembers = waitingMemberRepository.findAll();
-            List<RoomRes> roomResList = new ArrayList<>();
 
-            tryMatching(userId, waitingMembers, roomResList);
+            tryMatching(userId, waitingMembers);
         }
     }
 
-    private void tryMatching(Long userId, List<WaitingMember> waitingMembers, List<RoomRes> roomResList) {
+    private void tryMatching(Long userId, List<WaitingMember> waitingMembers) {
+
         int n = waitingMembers.size();
         WaitingMember A = waitingMemberRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
 
@@ -291,6 +284,7 @@ public class RoomService {
 
                 List<WaitingMember> memberList = new ArrayList<>(Arrays.asList(A, B));
                 ResponseEntity<String> responseEntity = getDirection(makePayload(memberList));
+                makeRoom(responseEntity, memberList);
 
                 //if (!matched_2.containsKey(A_Id)) matched_2.put(A_Id, new HashSet<>());
                 matched_2.get(A.getId()).add(B.getId());
@@ -298,10 +292,10 @@ public class RoomService {
                 if (!matched_2.containsKey(B.getId())) matched_2.put(B.getId(), new HashSet<>());
                 matched_2.get(B.getId()).add(A.getId());
 
-                isMatched3(roomResList, A, B);
+                isMatched3(A, B);
             }
 
-            template.convertAndSend("/sub/member/" + userId, roomResList);
+            template.convertAndSend("/sub/member/" + userId, waitingMemberRoomService.makeRoomResList(userId));
         }
     }
 
@@ -327,7 +321,7 @@ public class RoomService {
                 && A_range >= end_distance && B_range >= end_distance;
     }
 
-    private void isMatched3(List<RoomRes> roomResList, WaitingMember A, WaitingMember B) {
+    private void isMatched3(WaitingMember A, WaitingMember B) {
         ResponseEntity<String> responseEntity;
         //(a<->b), (b<->c), (c<->a)인 경우 확인.
         for (Long C_Id : matched_2.get(A.getId())) {
@@ -344,6 +338,7 @@ public class RoomService {
             WaitingMember C = waitingMemberRepository.findById(C_Id).orElseThrow(IllegalArgumentException::new);
             List<WaitingMember> memberList = new ArrayList<>(Arrays.asList(A, B, C));
             responseEntity = getDirection(makePayload(memberList));
+            makeRoom(responseEntity, memberList);
 
             //if (!matched_3.containsKey(A_Id)) matched_3.put(A_Id, new HashSet<>());
             matched_3.get(A.getId()).add(bc);
@@ -356,11 +351,11 @@ public class RoomService {
             if (!matched_3.containsKey(C_Id)) matched_3.put(C_Id, new HashSet<>());
             matched_3.get(C_Id).add(ab);
 
-            isMatched4(roomResList, A, B, C, memberList);
+            isMatched4(A, B, C, memberList);
         }
     }
 
-    private void isMatched4(List<RoomRes> roomResList, WaitingMember A, WaitingMember B, WaitingMember C, List<WaitingMember> memberList) {
+    private void isMatched4(WaitingMember A, WaitingMember B, WaitingMember C, List<WaitingMember> memberList) {
         ResponseEntity<String> responseEntity;
         //(a<->b), (a<->c), (a<->d), (b<->c), (b<->d), (c<->d)인 경우 확인.
         //a,b,c는 이미 한 묶음이므로, (a<->d), (b<->d), (c<->d)만 확인하면 된다. 이건 (a<->cd), (b<->cd)만 확인하면 된다.
@@ -382,6 +377,7 @@ public class RoomService {
             while (memberList.size() > 3) memberList.remove(memberList.size() - 1);
             memberList.add(D);
             responseEntity = getDirection(makePayload(memberList));
+            makeRoom(responseEntity, memberList);
 
             //if (!matched_4.containsKey(A_Id)) matched_4.put(A_Id, new HashSet<>());
             matched_4.get(A.getId()).add(bcd);
@@ -404,6 +400,15 @@ public class RoomService {
     }
 
     public void depart(List<Long> go, Long driverId) {
+        for (Long userId : go) {
+            waitingMemberRepository.deleteById(userId);
+            List<WaitingMemberRoom> waitingMemberRoomList = waitingMemberRoomRepository.findByWaitingMember_Id(userId);
+
+            for (WaitingMemberRoom waitingMemberRoom : waitingMemberRoomList) {
+                roomRepository.deleteById(waitingMemberRoom.getRoom().getRoomId());
+            }
+        }
+
         matched_2.forEach((key, value) -> value.removeIf(go::contains));
         matched_3.forEach((key, value) -> value.removeIf(userIds ->
                 go.contains(userIds.getFirst()) || go.contains(userIds.getSecond())));
@@ -412,6 +417,11 @@ public class RoomService {
 
     public void cancelMatching(Long userId) {
         waitingMemberRepository.deleteById(userId);
+        List<WaitingMemberRoom> waitingMemberRoomList = waitingMemberRoomRepository.findByWaitingMember_Id(userId);
+
+        for (WaitingMemberRoom waitingMemberRoom : waitingMemberRoomList) {
+            roomRepository.deleteById(waitingMemberRoom.getRoom().getRoomId());
+        }
 
         matched_2.forEach((key, value) -> value.removeIf(userId::equals));
         matched_3.forEach((key, value) -> value.removeIf(userIds ->

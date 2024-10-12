@@ -41,7 +41,7 @@ public class Room extends BaseEntity {
     @Column(name = "is_delete", nullable = false)
     private Boolean isDelete;
 
-    @OneToMany(mappedBy = "room", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "room", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<WaitingMemberRoom> waitingMemberRoomList = new ArrayList<>();
 
     @Builder

@@ -7,5 +7,6 @@ import java.util.List;
 
 public interface WaitingMemberRoomRepository extends JpaRepository<WaitingMemberRoom, Long> {
 
-    List<WaitingMemberRoom> findByWaitingMember(Long userId);
+    List<WaitingMemberRoom> findByWaitingMember_Id(Long waitingMemberId);
+
 }
