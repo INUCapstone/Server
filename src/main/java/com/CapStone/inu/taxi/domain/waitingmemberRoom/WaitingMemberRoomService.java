@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -36,18 +37,22 @@ public class WaitingMemberRoomService {
 
         List<RoomRes> roomResList = new ArrayList<>();
 
-        //이거 고쳐야될지도.
+        //ID가 userId인 모든 WaitingMemberRoom 조회.
         List<WaitingMemberRoom> waitingMemberRoomList = waitingMemberRoomRepository.findByWaitingMember_Id(userId);
 
         for(WaitingMemberRoom waitingMemberRoom : waitingMemberRoomList){
+            //userId가 속한 모든 room 에 대해,
             Room room = waitingMemberRoom.getRoom();
             List<WaitingMember> memberList = new ArrayList<>();
-            //룸에 누가 들어있는지 찾기위해. 변수명 바꾸기.
-            for(WaitingMemberRoom _asdasdawaitingMemberRoom : room.getWaitingMemberRoomList()){
-                memberList.add(_asdasdawaitingMemberRoom.getWaitingMember());
+            //그 room 에 있는 waitingMember 조회.
+            for(WaitingMemberRoom _waitingMemberRoom : room.getWaitingMemberRoomList()){
+                memberList.add(_waitingMemberRoom.getWaitingMember());
             }
+            //member 중복제거.
+            memberList = memberList.stream().distinct().collect(Collectors.toList());
 
             List<memberInfo> memberInfoList = new ArrayList<>();
+            //조회한 waitingMember 들로부터 memberInfo 추출.
             for (WaitingMember waitingMember : memberList) {
                 Member member = memberRepository.findById(waitingMember.getId()).orElseThrow(IllegalArgumentException::new);
                 memberInfo memberInfo = new memberInfo();
@@ -55,31 +60,26 @@ public class WaitingMemberRoomService {
                 memberInfo.setMemberId(member.getId());
                 memberInfo.setIsReady(false);
                 memberInfoList.add(memberInfo);
-                log.info("member name logging : " + member.getNickname());
+                //log.info("member name logging : " + member.getNickname());
             }
 
-
             //역직렬화.
-//            Gson gson = new Gson();
-//            Type listType = new TypeToken<List<pathInfo>>(){}.getType();
-//
-//            List<pathInfo> pathInfoList = gson.fromJson(room.getTaxiPath(), listType);
+            Gson gson = new Gson();
+            Type listType = new TypeToken<List<pathInfo>>(){}.getType();
+            List<pathInfo> pathInfoList = gson.fromJson(room.getTaxiPath(), listType);
 
             RoomRes roomRes = RoomRes.builder()
                     .roomId(room.getRoomId())
                     .currentMemberCnt(memberList.size())
-                    .pathInfoList(new ArrayList<>())
+                    .pathInfoList(pathInfoList)
                     .time(room.getTaxiDuration())
                     .charge(room.getTaxiFare())
                     .memberList(memberInfoList)
-                    .isDelete(room.getIsDelete())
                     .isStart(room.getIsStart())
                     .build();
 
                     roomResList.add(roomRes);
         }
-
-
         return roomResList;
     }
 }

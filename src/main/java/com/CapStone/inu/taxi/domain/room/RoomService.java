@@ -58,11 +58,9 @@ public class RoomService {
 
         // 외부 API로부터 받은 응답 반환
 
-        ResponseEntity<String> response = restTemplate.exchange(
+        return restTemplate.exchange(
                 url, HttpMethod.POST, entity, String.class
         );
-        //System.out.println(response);
-        return response;
     }
 
     //kakao api에 택시를 함께 탈 멤버 리스트를 요청 호출 방식에 맞게 작성.
@@ -215,6 +213,18 @@ public class RoomService {
     //매칭이 성공한 시점에 방 생성, 생성된 정보를 프론트에 넘겨줌.
     public void makeRoom(ResponseEntity<String> responseEntity, List<WaitingMember> memberList) {
         log.info("방생성 로직 시작");
+
+        //방 중복 검사는 isMatched2에서 이미 했다.
+        Long roomId = 0L;
+        List<Long> list = new ArrayList<>();
+        for (WaitingMember waitingMember : memberList) {
+            list.add(waitingMember.getId());
+        }
+        Collections.sort(list);
+        for (Long id : list) {
+            roomId = roomId * 100000L + id;
+        }
+
         Gson gson = new Gson();
         Route route = gson.fromJson(responseEntity.getBody(), ApiResponse.class).getRoutes()[0];//1가지 경로만 탐색함.(getRoutes()[0])
 
@@ -236,6 +246,7 @@ public class RoomService {
         Integer duration = route.getSummary().getDuration();
 
         Room room = Room.builder()
+                .roomId(roomId)
                 .taxiFare(fare)
                 .taxiDuration(duration)
                 .taxiPath(gson.toJson(pathInfoList))
@@ -267,6 +278,17 @@ public class RoomService {
 
             tryMatching(userId, waitingMembers);
         }
+
+//        //테스트용.
+//        int n = 1;
+//        while (n > 0) {
+//            if (!waitingMemberRepository.existsById(userId))
+//                break;
+//            List<WaitingMember> waitingMembers = waitingMemberRepository.findAll();
+//            for(Long i=1L;i<=4L;i++)
+//                tryMatching(i,waitingMembers);
+//            n--;
+//        }
     }
 
     private void tryMatching(Long userId, List<WaitingMember> waitingMembers) {
@@ -303,6 +325,9 @@ public class RoomService {
         if (A.equals(B)) return false;
 
         Long A_Id = A.getId(), B_Id = B.getId();
+        Long roomId = Math.min(A_Id, B_Id) * 100000L + Math.max(A_Id, B_Id);
+        //이미 존재하는 방이므로, 또 만들 필요 없음.
+        if (roomRepository.findById(roomId).isPresent()) return false;
 
         if (!matched_2.containsKey(A_Id)) matched_2.put(A_Id, new HashSet<>());
         //이미 a-b가 매칭되어있으므로, 또 검사할 필요 없음.
@@ -322,7 +347,6 @@ public class RoomService {
     }
 
     private void isMatched3(WaitingMember A, WaitingMember B) {
-        ResponseEntity<String> responseEntity;
         //(a<->b), (b<->c), (c<->a)인 경우 확인.
         for (Long C_Id : matched_2.get(A.getId())) {
             //if (!matched_2.containsKey(B_Id)) matched_2.put(B_Id, new HashSet<>());
@@ -337,7 +361,7 @@ public class RoomService {
             //a-b-c 매칭 성공
             WaitingMember C = waitingMemberRepository.findById(C_Id).orElseThrow(IllegalArgumentException::new);
             List<WaitingMember> memberList = new ArrayList<>(Arrays.asList(A, B, C));
-            responseEntity = getDirection(makePayload(memberList));
+            ResponseEntity<String> responseEntity = getDirection(makePayload(memberList));
             makeRoom(responseEntity, memberList);
 
             //if (!matched_3.containsKey(A_Id)) matched_3.put(A_Id, new HashSet<>());
@@ -356,7 +380,6 @@ public class RoomService {
     }
 
     private void isMatched4(WaitingMember A, WaitingMember B, WaitingMember C, List<WaitingMember> memberList) {
-        ResponseEntity<String> responseEntity;
         //(a<->b), (a<->c), (a<->d), (b<->c), (b<->d), (c<->d)인 경우 확인.
         //a,b,c는 이미 한 묶음이므로, (a<->d), (b<->d), (c<->d)만 확인하면 된다. 이건 (a<->cd), (b<->cd)만 확인하면 된다.
         for (Pair<Long, Long> cd : matched_3.get(A.getId())) {
@@ -376,7 +399,7 @@ public class RoomService {
             WaitingMember D = waitingMemberRepository.findById(D_Id).orElseThrow(IllegalArgumentException::new);
             while (memberList.size() > 3) memberList.remove(memberList.size() - 1);
             memberList.add(D);
-            responseEntity = getDirection(makePayload(memberList));
+            ResponseEntity<String> responseEntity = getDirection(makePayload(memberList));
             makeRoom(responseEntity, memberList);
 
             //if (!matched_4.containsKey(A_Id)) matched_4.put(A_Id, new HashSet<>());
