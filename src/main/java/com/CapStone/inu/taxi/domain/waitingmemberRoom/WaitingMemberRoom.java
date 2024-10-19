@@ -26,12 +26,12 @@ public class WaitingMemberRoom extends BaseEntity {
     private WaitingMember waitingMember;
 
     @ManyToOne
-    @JoinColumn(name = "room_id",nullable = false)
+    @JoinColumn(name = "room_id", nullable = false)
     private Room room;
 
     @Builder
-    public WaitingMemberRoom(Boolean isReady, WaitingMember waitingMember, Room room) {
-        this.isReady= isReady;
+    public WaitingMemberRoom(WaitingMember waitingMember, Room room) {
+        this.isReady = false;
         this.waitingMember = waitingMember;
         this.room = room;
     }

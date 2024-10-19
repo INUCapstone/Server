@@ -33,7 +33,7 @@ public class WaitingMember extends BaseEntity {
 
     @Builder
     private WaitingMember(Long id, Double startX, Double startY, Double endX, Double endY) {
-        this.id=id;
+        this.id = id;
         this.startX = startX;
         this.startY = startY;
         this.endX = endX;
@@ -41,5 +41,5 @@ public class WaitingMember extends BaseEntity {
     }
 
     @OneToMany(mappedBy = "waitingMember", fetch = FetchType.LAZY)
-    private List<WaitingMemberRoom> waitingMemberRoomList=new ArrayList<>();
+    private List<WaitingMemberRoom> waitingMemberRoomList = new ArrayList<>();
 }
