@@ -17,6 +17,16 @@ public class RoomRes {
     private final Boolean isDelete;
     private final Boolean isStart;
 
+    //테스트용
+    @Override
+    public String toString() {
+        String s = "[";
+        for (memberInfo memberInfo: memberList)
+            s=s.concat(memberInfo.getNickname() + ", ");
+        s=s.concat("]");
+        return s;
+    }
+
     @Builder
     public RoomRes(Long roomId, Integer currentMemberCnt, List<pathInfo> pathInfoList, Integer time,
                    Integer charge, List<memberInfo> memberList, Boolean isDelete, Boolean isStart) {

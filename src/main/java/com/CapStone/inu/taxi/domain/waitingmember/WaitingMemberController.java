@@ -1,5 +1,6 @@
 package com.CapStone.inu.taxi.domain.waitingmember;
 
+import com.CapStone.inu.taxi.domain.room.RoomService;
 import com.CapStone.inu.taxi.domain.waitingmember.dto.WaitingMemberReqDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -17,6 +18,7 @@ import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 @Log4j2
 public class WaitingMemberController {
     private final WaitingMemberService waitingMemberService;
+    private final RoomService roomService;
 
     // 경로는 pub/match/{memberId}로 메세지를 보내야한다.
     @MessageMapping("match/{memberId}")
@@ -24,8 +26,7 @@ public class WaitingMemberController {
         log.info("웹소켓 연결 성공");
         waitingMemberService.createWaitingMember(memberId,waitingMemberReqDto);
         log.info("Waiting Member 생성 성공");
-        waitingMemberService.matchUser(memberId);
-
+        roomService.matchUser(memberId);
 
     }
 
@@ -40,10 +41,5 @@ public class WaitingMemberController {
         waitingMemberService.cancelMatching(memberId);
         log.info("Waiting Member 삭제 성공");
 
-    }
-
-    @GetMapping(value = "/test")
-    public void test() {
-        waitingMemberService.Test();
     }
 }
