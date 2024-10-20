@@ -44,6 +44,10 @@ public class Room extends BaseEntity {
     @OneToMany(mappedBy = "room", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<WaitingMemberRoom> waitingMemberRoomList = new ArrayList<>();
 
+    public void setIsStart() {
+        this.isStart = true;
+    }
+
     @Builder
     private Room(Long roomId, Integer taxiFare, Integer taxiDuration, String taxiPath, Integer taxiHeadcount,
                  Long driverId) {
