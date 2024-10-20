@@ -7,7 +7,7 @@ import lombok.Getter;
 import java.time.LocalDateTime;
 
 @Getter
-public class WatingRoomRes {
+public class WaitingRoomRes {
 
     private final String title;
     private final Integer memberCount;
@@ -18,7 +18,7 @@ public class WatingRoomRes {
     private final Integer expectedPrice;
 
     @Builder
-    private WatingRoomRes(String title, Integer memberCount, String departure, String arrival, String layover, LocalDateTime expectedTime, Integer expectedPrice) {
+    private WaitingRoomRes(String title, Integer memberCount, String departure, String arrival, String layover, LocalDateTime expectedTime, Integer expectedPrice) {
         this.title = title;
         this.memberCount = memberCount;
         this.departure = departure;
@@ -28,8 +28,8 @@ public class WatingRoomRes {
         this.expectedPrice = expectedPrice;
     }
 
-    public static WatingRoomRes from(WaitingRoom waitingRoom){
-        return WatingRoomRes.builder()
+    public static WaitingRoomRes from(WaitingRoom waitingRoom){
+        return WaitingRoomRes.builder()
                 .title(waitingRoom.getTitle())
                 .memberCount(waitingRoom.getMemberCount())
                 .departure(waitingRoom.getDeparture())
