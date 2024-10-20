@@ -425,11 +425,10 @@ public class RoomService {
         }
     }
 
-    public void depart(List<Long> go, Long driverId) {
-        for (Long userId : go) {
-            waitingMemberRepository.deleteById(userId);
-            List<WaitingMemberRoom> waitingMemberRoomList = waitingMemberRoomRepository.findByWaitingMember_Id(userId);
+    public void depart(List<Long> go) {
 
+        for (Long userId : go) {
+            List<WaitingMemberRoom> waitingMemberRoomList = waitingMemberRoomRepository.findByWaitingMember_Id(userId);
             for (WaitingMemberRoom waitingMemberRoom : waitingMemberRoomList) {
                 roomRepository.deleteById(waitingMemberRoom.getRoom().getRoomId());
             }
@@ -442,9 +441,8 @@ public class RoomService {
     }
 
     public void cancelMatching(Long userId) {
-        waitingMemberRepository.deleteById(userId);
-        List<WaitingMemberRoom> waitingMemberRoomList = waitingMemberRoomRepository.findByWaitingMember_Id(userId);
 
+        List<WaitingMemberRoom> waitingMemberRoomList = waitingMemberRoomRepository.findByWaitingMember_Id(userId);
         for (WaitingMemberRoom waitingMemberRoom : waitingMemberRoomList) {
             roomRepository.deleteById(waitingMemberRoom.getRoom().getRoomId());
         }
