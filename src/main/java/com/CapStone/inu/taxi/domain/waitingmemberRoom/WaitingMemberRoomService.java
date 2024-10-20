@@ -7,6 +7,8 @@ import com.CapStone.inu.taxi.domain.room.dto.kakao.memberInfo;
 import com.CapStone.inu.taxi.domain.room.dto.kakao.pathInfo;
 import com.CapStone.inu.taxi.domain.room.dto.response.RoomRes;
 import com.CapStone.inu.taxi.domain.waitingmember.WaitingMember;
+import com.CapStone.inu.taxi.global.common.StatusCode;
+import com.CapStone.inu.taxi.global.exception.CustomException;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import lombok.RequiredArgsConstructor;
@@ -54,7 +56,7 @@ public class WaitingMemberRoomService {
             List<memberInfo> memberInfoList = new ArrayList<>();
             //조회한 waitingMember 들로부터 memberInfo 추출.
             for (WaitingMember waitingMember : memberList) {
-                Member member = memberRepository.findById(waitingMember.getId()).orElseThrow(IllegalArgumentException::new);
+                Member member = memberRepository.findById(waitingMember.getId()).orElseThrow(()-> new CustomException(StatusCode.MEMBER_NOT_EXIST));
                 memberInfo memberInfo = new memberInfo();
                 memberInfo.setNickname(member.getNickname());
                 memberInfo.setMemberId(member.getId());

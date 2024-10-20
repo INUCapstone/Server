@@ -4,6 +4,8 @@ import com.CapStone.inu.taxi.domain.driver.Driver;
 import com.CapStone.inu.taxi.domain.driver.DriverRepository;
 import com.CapStone.inu.taxi.domain.room.RoomService;
 import com.CapStone.inu.taxi.domain.waitingmember.dto.WaitingMemberReqDto;
+import com.CapStone.inu.taxi.global.common.StatusCode;
+import com.CapStone.inu.taxi.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,10 +32,10 @@ public class WaitingMemberService {
 
         //대기 목록에서 지우기
         for (Long go_userId : go) {
-            WaitingMember deletedUser = waitingMemberRepository.findById(go_userId).orElseThrow(IllegalArgumentException::new);
+            WaitingMember deletedUser = waitingMemberRepository.findById(go_userId).orElseThrow(()-> new CustomException(StatusCode.MEMBER_NOT_EXIST));
             waitingMemberRepository.delete(deletedUser);
         }
-        Driver driver = driverRepository.findById(driverId).orElseThrow(IllegalArgumentException::new);
+        Driver driver = driverRepository.findById(driverId).orElseThrow(()-> new CustomException(StatusCode.DRIVER_NOT_EXIST));
         driverRepository.delete(driver);
 
         //결제 기록 남겨두기

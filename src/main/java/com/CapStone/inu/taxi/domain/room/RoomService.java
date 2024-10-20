@@ -6,6 +6,8 @@ import com.CapStone.inu.taxi.domain.waitingmember.WaitingMemberRepository;
 import com.CapStone.inu.taxi.domain.waitingmemberRoom.WaitingMemberRoom;
 import com.CapStone.inu.taxi.domain.waitingmemberRoom.WaitingMemberRoomRepository;
 import com.CapStone.inu.taxi.domain.waitingmemberRoom.WaitingMemberRoomService;
+import com.CapStone.inu.taxi.global.common.StatusCode;
+import com.CapStone.inu.taxi.global.exception.CustomException;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -214,7 +216,6 @@ public class RoomService {
     public void makeRoom(ResponseEntity<String> responseEntity, List<WaitingMember> memberList) {
         log.info("방생성 로직 시작");
 
-        //방 중복 검사는 isMatched2에서 이미 했다.
         Long roomId = 0L;
         List<Long> list = new ArrayList<>();
         for (WaitingMember waitingMember : memberList) {
@@ -254,6 +255,8 @@ public class RoomService {
                 .driverId(null)
                 .build();
 
+        //만약 roomId가 같은 방이 이미 존재했다면, save()함수는 자동으로 update의 역할을 한다.
+        //경로가 실시간으로 바뀔 가능성도 있으므로 hashmap 자료구조에 저장되는 최초 1회는 update 되는 것도 좋을듯.
         roomRepository.save(room);
 
         //waitingmemberroom 만들기. memberList사람수만큼.
@@ -294,7 +297,7 @@ public class RoomService {
     private void tryMatching(Long userId, List<WaitingMember> waitingMembers) {
 
         int n = waitingMembers.size();
-        WaitingMember A = waitingMemberRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
+        WaitingMember A = waitingMemberRepository.findById(userId).orElseThrow(()-> new CustomException(StatusCode.MEMBER_NOT_EXIST));
 
         for (int j = 0; j < n; j++) {
             WaitingMember B = waitingMembers.get(j);
@@ -325,9 +328,9 @@ public class RoomService {
         if (A.equals(B)) return false;
 
         Long A_Id = A.getId(), B_Id = B.getId();
-        Long roomId = Math.min(A_Id, B_Id) * 100000L + Math.max(A_Id, B_Id);
-        //이미 존재하는 방이므로, 또 만들 필요 없음.
-        if (roomRepository.findById(roomId).isPresent()) return false;
+//        Long roomId = Math.min(A_Id, B_Id) * 100000L + Math.max(A_Id, B_Id);
+//        //이미 존재하는 방이므로, 또 만들 필요 없음. -> 이거 검사 안하는게 낫겠다. 하면, 코드 재시작할때 3~4인 매칭이 제대로 동작하지 않는다.
+//        if (roomRepository.findById(roomId).isPresent()) return false;
 
         if (!matched_2.containsKey(A_Id)) matched_2.put(A_Id, new HashSet<>());
         //이미 a-b가 매칭되어있으므로, 또 검사할 필요 없음.
@@ -359,7 +362,7 @@ public class RoomService {
             //if (matched_3.get(A_Id).contains(bc)) continue;
 
             //a-b-c 매칭 성공
-            WaitingMember C = waitingMemberRepository.findById(C_Id).orElseThrow(IllegalArgumentException::new);
+            WaitingMember C = waitingMemberRepository.findById(C_Id).orElseThrow(()-> new CustomException(StatusCode.MEMBER_NOT_EXIST));
             List<WaitingMember> memberList = new ArrayList<>(Arrays.asList(A, B, C));
             ResponseEntity<String> responseEntity = getDirection(makePayload(memberList));
             makeRoom(responseEntity, memberList);
@@ -396,7 +399,7 @@ public class RoomService {
             //if (matched_4.get(A_Id).contains(bcd)) continue;
 
             //a-b-c-d 매칭 성공
-            WaitingMember D = waitingMemberRepository.findById(D_Id).orElseThrow(IllegalArgumentException::new);
+            WaitingMember D = waitingMemberRepository.findById(D_Id).orElseThrow(()-> new CustomException(StatusCode.MEMBER_NOT_EXIST));
             while (memberList.size() > 3) memberList.remove(memberList.size() - 1);
             memberList.add(D);
             ResponseEntity<String> responseEntity = getDirection(makePayload(memberList));
