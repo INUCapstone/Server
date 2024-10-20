@@ -48,6 +48,7 @@ public class Room extends BaseEntity {
         this.isStart = true;
     }
 
+
     @Builder
     private Room(Long roomId, Integer taxiFare, Integer taxiDuration, String taxiPath, Integer taxiHeadcount,
                  Long driverId) {
