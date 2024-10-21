@@ -39,4 +39,6 @@ public class WaitingMemberRoom extends BaseEntity {
         this.waitingMember = waitingMember;
         this.room = room;
     }
+
+    public void updateReady(){ this.isReady= !isReady; }
 }

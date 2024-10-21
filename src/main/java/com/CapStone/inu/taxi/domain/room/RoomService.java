@@ -18,7 +18,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
 import org.springframework.http.*;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -26,6 +26,8 @@ import org.springframework.web.client.RestTemplate;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
 
 @Service
 @Transactional
@@ -38,6 +40,10 @@ public class RoomService {
     private final SimpMessagingTemplate template;
     private final WaitingMemberRoomService waitingMemberRoomService;
     private final DriverRepository driverRepository;
+    private final TaskScheduler taskScheduler; // 비동기 작업을 예약하고 실행하는 데 사용, 직접 설정 시 매개변수 활요범위가 높다.
+    // 여러 사용자의 매칭 작업을 관리할 수 있도록 Map을 사용
+    private final Map<Long, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
+    private ScheduledFuture<?> scheduledFuture;
 
     //Key: userId, value: 해당 유저와 매칭에 성공한 상대 유저 목록
     private HashMap<Long, HashSet<Long>> matched_2 = new HashMap<>();
@@ -271,20 +277,27 @@ public class RoomService {
         log.info("방 생성 완료");
     }
 
+    public void startMatchAlgorithm(Long userId){
+        stopMatchAlgorithm(userId); // 기존 매칭 작업 중지
+
+        // 새로운 매칭 작업을 시작합니다.
+        scheduledFuture = taskScheduler.scheduleWithFixedDelay(() -> matchUser(userId), 5000); // 5초마다
+
+        // 해당 사용자의 매칭 작업을 저장합니다.
+        scheduledTasks.put(userId, scheduledFuture);
+    }
+
     /*유저 매칭 시도.
     1. 매칭 시도 버튼을 누른 시점을 기준으로 탐색 범위를 넓혀나가면서, 서로 탐색 범위에 들어온 두 유저는 매칭에 성공함.
     2. A-B가 매칭에 성공하면 방을 생성하고, A-B-C 매칭도 성공했는지 추가로 확인.
     3. 마찬가지로 A-B-C가 매칭에 성공하면 A-B-C-D가 매칭에 성공했는지 추가로 확인.
     * */
-    @Async
     public void matchUser(Long userId) {
-        while (true) {
-            if (!waitingMemberRepository.existsById(userId))
-                break;
-            List<WaitingMember> waitingMembers = waitingMemberRepository.findAll();
+        if (!waitingMemberRepository.existsById(userId))
+            stopMatchAlgorithm(userId);
+        List<WaitingMember> waitingMembers = waitingMemberRepository.findAll();
 
-            tryMatching(userId, waitingMembers);
-        }
+        tryMatching(userId, waitingMembers);
 
 //        //테스트용.
 //        int n = 1;
@@ -458,6 +471,8 @@ public class RoomService {
 
     public void cancelMatching(Long userId) {
 
+        stopMatchAlgorithm(userId);
+
         List<WaitingMemberRoom> waitingMemberRoomList = waitingMemberRoomRepository.findByWaitingMember_Id(userId);
         for (WaitingMemberRoom waitingMemberRoom : waitingMemberRoomList) {
             roomRepository.deleteById(waitingMemberRoom.getRoom().getRoomId());
@@ -467,5 +482,13 @@ public class RoomService {
         matched_3.forEach((key, value) -> value.removeIf(userIds ->
                 userId.equals(userIds.getFirst()) || userId.equals(userIds.getSecond())));
         matched_4.forEach((key, value) -> value.removeIf(userIds -> userIds.stream().anyMatch(userId::equals)));
+    }
+
+    public void stopMatchAlgorithm(Long userId){
+        ScheduledFuture<?> scheduledFuture = scheduledTasks.get(userId);
+        if (scheduledFuture != null) {
+            scheduledFuture.cancel(false); // 스케줄러 중지
+            scheduledTasks.remove(userId); // 해당 사용자의 매칭 작업을 Map에서 제거
+        }
     }
 }
