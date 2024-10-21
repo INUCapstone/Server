@@ -441,7 +441,6 @@ public class RoomService {
         Driver driver = driverRepository.findFirstByState(State.STAND).orElseThrow(() -> new CustomException(StatusCode.DRIVER_NO_AVAILABLE));
         room.setDriverId(driver.getId());
     }
-
     public void depart(List<Long> go) {
 
         for (Long userId : go) {
