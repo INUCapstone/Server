@@ -30,6 +30,7 @@ public class WaitingMemberRoomService {
     private final WaitingMemberRoomRepository waitingMemberRoomRepository;
     private final MemberRepository memberRepository;
 
+    @Transactional
     public void makeWaitingMemberRoom(WaitingMember waitingMember, Room room) {
         WaitingMemberRoom waitingMemberRoom = new WaitingMemberRoom(waitingMember, room);
         waitingMemberRoomRepository.save(waitingMemberRoom);

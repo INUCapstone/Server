@@ -7,6 +7,7 @@ import com.CapStone.inu.taxi.domain.receipt.ReceiptRepository;
 import com.CapStone.inu.taxi.domain.room.Room;
 import com.CapStone.inu.taxi.domain.room.RoomService;
 import com.CapStone.inu.taxi.domain.waitingmember.dto.WaitingMemberReqDto;
+import com.CapStone.inu.taxi.global.common.State;
 import com.CapStone.inu.taxi.global.common.StatusCode;
 import com.CapStone.inu.taxi.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
+//이거 모든 함수에 transaction이 달려있는데, 맨 위에만 달면 되는거아닌가?
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -39,7 +41,7 @@ public class WaitingMemberService {
             waitingMemberRepository.deleteById(user_id);
         }
         Driver driver = driverRepository.findById(room.getDriverId()).orElseThrow(() -> new CustomException(StatusCode.DRIVER_NOT_EXIST));
-        driverRepository.delete(driver);
+        driver.setState(State.DEPART);//영속성 컨텍스트에 의해 변경사항 자동으로 반영.
 
         //결제 기록 남겨두기
         Receipt receipt = Receipt.builder()

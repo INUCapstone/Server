@@ -1,11 +1,14 @@
 package com.CapStone.inu.taxi.domain.room;
 
+import com.CapStone.inu.taxi.domain.driver.Driver;
+import com.CapStone.inu.taxi.domain.driver.DriverRepository;
 import com.CapStone.inu.taxi.domain.room.dto.kakao.*;
 import com.CapStone.inu.taxi.domain.waitingmember.WaitingMember;
 import com.CapStone.inu.taxi.domain.waitingmember.WaitingMemberRepository;
 import com.CapStone.inu.taxi.domain.waitingmemberRoom.WaitingMemberRoom;
 import com.CapStone.inu.taxi.domain.waitingmemberRoom.WaitingMemberRoomRepository;
 import com.CapStone.inu.taxi.domain.waitingmemberRoom.WaitingMemberRoomService;
+import com.CapStone.inu.taxi.global.common.State;
 import com.CapStone.inu.taxi.global.common.StatusCode;
 import com.CapStone.inu.taxi.global.exception.CustomException;
 import com.google.gson.Gson;
@@ -34,6 +37,7 @@ public class RoomService {
     private final WaitingMemberRoomRepository waitingMemberRoomRepository;
     private final SimpMessagingTemplate template;
     private final WaitingMemberRoomService waitingMemberRoomService;
+    private final DriverRepository driverRepository;
 
     //Key: userId, value: 해당 유저와 매칭에 성공한 상대 유저 목록
     private HashMap<Long, HashSet<Long>> matched_2 = new HashMap<>();
@@ -297,7 +301,7 @@ public class RoomService {
     private void tryMatching(Long userId, List<WaitingMember> waitingMembers) {
 
         int n = waitingMembers.size();
-        WaitingMember A = waitingMemberRepository.findById(userId).orElseThrow(()-> new CustomException(StatusCode.MEMBER_NOT_EXIST));
+        WaitingMember A = waitingMemberRepository.findById(userId).orElseThrow(() -> new CustomException(StatusCode.MEMBER_NOT_EXIST));
 
         for (int j = 0; j < n; j++) {
             WaitingMember B = waitingMembers.get(j);
@@ -362,7 +366,7 @@ public class RoomService {
             //if (matched_3.get(A_Id).contains(bc)) continue;
 
             //a-b-c 매칭 성공
-            WaitingMember C = waitingMemberRepository.findById(C_Id).orElseThrow(()-> new CustomException(StatusCode.MEMBER_NOT_EXIST));
+            WaitingMember C = waitingMemberRepository.findById(C_Id).orElseThrow(() -> new CustomException(StatusCode.MEMBER_NOT_EXIST));
             List<WaitingMember> memberList = new ArrayList<>(Arrays.asList(A, B, C));
             ResponseEntity<String> responseEntity = getDirection(makePayload(memberList));
             makeRoom(responseEntity, memberList);
@@ -399,7 +403,7 @@ public class RoomService {
             //if (matched_4.get(A_Id).contains(bcd)) continue;
 
             //a-b-c-d 매칭 성공
-            WaitingMember D = waitingMemberRepository.findById(D_Id).orElseThrow(()-> new CustomException(StatusCode.MEMBER_NOT_EXIST));
+            WaitingMember D = waitingMemberRepository.findById(D_Id).orElseThrow(() -> new CustomException(StatusCode.MEMBER_NOT_EXIST));
             while (memberList.size() > 3) memberList.remove(memberList.size() - 1);
             memberList.add(D);
             ResponseEntity<String> responseEntity = getDirection(makePayload(memberList));
@@ -425,6 +429,18 @@ public class RoomService {
         }
     }
 
+    public void assignDriver(Room room) {
+
+        /*일단 findFirstByState(State.STAND)로 아무나 데려오자.
+
+        * 방에서 모든 유저가 레디 -> 대기중인 기사님에게 신호를 보냄 -> 기사님이 수락하면 room에 기사님이 배정됨
+        * 위의 로직으로 가려면, request와 response dto를 주고받아서 해야될것같고, 이렇게 하면 안됨.
+
+        * 택시 경로가 시작되는 지점으로부터 가장 가까운 driver를 가져오려면, findByState(State state)로 다 가져와서 가까운 기사님 찾으면 됨.
+        * */
+        Driver driver = driverRepository.findFirstByState(State.STAND).orElseThrow(() -> new CustomException(StatusCode.DRIVER_NO_AVAILABLE));
+        room.setDriverId(driver.getId());
+    }
     public void depart(List<Long> go) {
 
         for (Long userId : go) {

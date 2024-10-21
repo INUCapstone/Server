@@ -54,6 +54,7 @@ public enum StatusCode {
     /* 404 NOT_FOUNT : 존재하지 않는 리소스 */
     MEMBER_NOT_EXIST(NOT_FOUND,"존재하지 않는 멤버입니다."),
     DRIVER_NOT_EXIST(NOT_FOUND,"존재하지 않는 기사입니다."),
+    DRIVER_NO_AVAILABLE(NOT_FOUND,"대기중인 기사가 없습니다."),
     BUCKET_NOT_EXIST(NOT_FOUND,"존재하지 않는 버킷입니다."),
     TODO_NOT_EXIST(NOT_FOUND,"존재하지 않는 할 일입니다."),
     COMMENT_NOT_EXIST(NOT_FOUND,"존재하지 않는 댓글입니다."),
