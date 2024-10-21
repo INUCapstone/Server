@@ -1,6 +1,5 @@
 package com.CapStone.inu.taxi.domain.member;
 
-import com.CapStone.inu.taxi.domain.requirement.Requirement;
 import com.CapStone.inu.taxi.global.common.BaseEntity;
 import com.CapStone.inu.taxi.global.common.Role;
 import jakarta.persistence.*;
@@ -43,9 +42,6 @@ public class Member extends BaseEntity implements UserDetails {
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private Role role;
-
-    @OneToOne(mappedBy = "member",cascade = CascadeType.REMOVE,fetch = FetchType.LAZY)
-    private Requirement requirement;
 
     @Builder
     private Member(String email, String password, String nickname, String phoneNumber, Integer point, Role role) {

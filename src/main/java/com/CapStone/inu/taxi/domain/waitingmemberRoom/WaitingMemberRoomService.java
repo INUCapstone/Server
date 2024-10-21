@@ -13,6 +13,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,8 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.CapStone.inu.taxi.global.common.StatusCode.*;
 
 @Service
 @Transactional(readOnly = true)
@@ -29,6 +32,7 @@ public class WaitingMemberRoomService {
 
     private final WaitingMemberRoomRepository waitingMemberRoomRepository;
     private final MemberRepository memberRepository;
+    private final SimpMessagingTemplate template;
 
     @Transactional
     public void makeWaitingMemberRoom(WaitingMember waitingMember, Room room) {
@@ -84,5 +88,23 @@ public class WaitingMemberRoomService {
                     roomResList.add(roomRes);
         }
         return roomResList;
+    }
+
+
+    @Transactional
+    public void ready(Long roomId, Long userId) {
+        WaitingMemberRoom waitingMemberRoom = waitingMemberRoomRepository.findByRoom_RoomIdAndWaitingMember_Id(roomId, userId)
+                .orElseThrow(() -> new CustomException(ROOM_MEMBER_NOT_EXIST));
+        waitingMemberRoom.updateReady();
+
+//        //ID가 roomId인 모든 WaitingMemberRoom 조회.
+//        List<WaitingMemberRoom> waitingMemberRoomList = waitingMemberRoomRepository.findByRoom_RoomId(roomId);
+//        for (WaitingMemberRoom WMR : waitingMemberRoomList) {
+//            //roomId가 속한 모든 user 에 대해,
+//
+//            template.convertAndSend("/sub/member/" + WMR.getWaitingMember().getId(), );
+//
+//
+//        }
     }
 }

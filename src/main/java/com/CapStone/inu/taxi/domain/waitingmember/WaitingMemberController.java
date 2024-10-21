@@ -9,7 +9,6 @@ import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
@@ -26,7 +25,7 @@ public class WaitingMemberController {
         log.info("웹소켓 연결 성공");
         waitingMemberService.createWaitingMember(memberId,waitingMemberReqDto);
         log.info("Waiting Member 생성 성공");
-        roomService.matchUser(memberId);
+        roomService.startMatchAlgorithm(memberId);
 
     }
 
