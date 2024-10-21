@@ -337,7 +337,7 @@ public class RoomService {
                 isMatched3(A, B);
             }
 
-            template.convertAndSend("/sub/member/" + userId, waitingMemberRoomService.makeRoomResList(userId));
+            template.convertAndSend("/sub/member/" + userId, waitingMemberRoomService.makeAllRoomResList(userId));
         }
     }
 
