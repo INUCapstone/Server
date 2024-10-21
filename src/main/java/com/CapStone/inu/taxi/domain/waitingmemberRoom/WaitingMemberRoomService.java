@@ -96,22 +96,4 @@ public class WaitingMemberRoomService {
                 .isStart(room.getIsStart())
                 .build();
     }
-
-
-    @Transactional
-    public void ready(Long roomId, Long userId) {
-        WaitingMemberRoom waitingMemberRoom = waitingMemberRoomRepository.findByRoom_RoomIdAndWaitingMember_Id(roomId, userId)
-                .orElseThrow(() -> new CustomException(ROOM_MEMBER_NOT_EXIST));
-        waitingMemberRoom.updateReady();
-        RoomRes roomRes = makeRoomRes(waitingMemberRoom.getRoom());
-
-        //ID가 roomId인 모든 WaitingMemberRoom 조회.
-        List<WaitingMemberRoom> waitingMemberRoomList = waitingMemberRoomRepository.findByRoom_RoomId(roomId);
-        for (WaitingMemberRoom WMR : waitingMemberRoomList) {
-            //roomId가 속한 모든 user 에 대해,
-            template.convertAndSend("/sub/member/" + WMR.getWaitingMember().getId(), roomRes);
-
-
-        }
-    }
 }

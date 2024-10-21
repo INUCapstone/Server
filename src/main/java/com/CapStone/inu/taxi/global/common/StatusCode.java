@@ -37,6 +37,7 @@ public enum StatusCode {
     AUTHORIZATION_INVALID(FORBIDDEN, "권한이 없습니다."),
 
     /* 404 NOT_FOUNT : 존재하지 않는 리소스 */
+    ROOM_NOT_EXIST(NOT_FOUND, "존재하지 않는 방입니다."),
     MEMBER_NOT_EXIST(NOT_FOUND, "존재하지 않는 멤버입니다."),
     DRIVER_NOT_EXIST(NOT_FOUND, "존재하지 않는 기사입니다."),
     DRIVER_NO_AVAILABLE(NOT_FOUND, "대기중인 기사가 없습니다."),

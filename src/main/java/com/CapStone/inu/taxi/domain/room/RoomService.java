@@ -2,7 +2,10 @@ package com.CapStone.inu.taxi.domain.room;
 
 import com.CapStone.inu.taxi.domain.driver.Driver;
 import com.CapStone.inu.taxi.domain.driver.DriverRepository;
+import com.CapStone.inu.taxi.domain.receipt.Receipt;
+import com.CapStone.inu.taxi.domain.receipt.ReceiptRepository;
 import com.CapStone.inu.taxi.domain.room.dto.kakao.*;
+import com.CapStone.inu.taxi.domain.room.dto.response.RoomRes;
 import com.CapStone.inu.taxi.domain.waitingmember.WaitingMember;
 import com.CapStone.inu.taxi.domain.waitingmember.WaitingMemberRepository;
 import com.CapStone.inu.taxi.domain.waitingmemberRoom.WaitingMemberRoom;
@@ -29,6 +32,9 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 
+import static com.CapStone.inu.taxi.global.common.StatusCode.ROOM_MEMBER_NOT_EXIST;
+import static com.CapStone.inu.taxi.global.common.StatusCode.ROOM_NOT_EXIST;
+
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -40,6 +46,7 @@ public class RoomService {
     private final SimpMessagingTemplate template;
     private final WaitingMemberRoomService waitingMemberRoomService;
     private final DriverRepository driverRepository;
+    private final ReceiptRepository receiptRepository;
     private final TaskScheduler taskScheduler; // 비동기 작업을 예약하고 실행하는 데 사용, 직접 설정 시 매개변수 활요범위가 높다.
     // 여러 사용자의 매칭 작업을 관리할 수 있도록 Map을 사용
     private final Map<Long, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
@@ -277,7 +284,7 @@ public class RoomService {
         log.info("방 생성 완료");
     }
 
-    public void startMatchAlgorithm(Long userId){
+    public void startMatchAlgorithm(Long userId) {
         stopMatchAlgorithm(userId); // 기존 매칭 작업 중지
 
         // 새로운 매칭 작업을 시작합니다.
@@ -446,27 +453,36 @@ public class RoomService {
 
         /*일단 findFirstByState(State.STAND)로 아무나 데려오자.
 
-        * 방에서 모든 유저가 레디 -> 대기중인 기사님에게 신호를 보냄 -> 기사님이 수락하면 room에 기사님이 배정됨
-        * 위의 로직으로 가려면, request와 response dto를 주고받아서 해야될것같고, 이렇게 하면 안됨.
+         * 방에서 모든 유저가 레디 -> 대기중인 기사님에게 신호를 보냄 -> 기사님이 수락하면 room에 기사님이 배정됨
+         * 위의 로직으로 가려면, request와 response dto를 주고받아서 해야될것같고, 이렇게 하면 안됨.
 
-        * 택시 경로가 시작되는 지점으로부터 가장 가까운 driver를 가져오려면, findByState(State state)로 다 가져와서 가까운 기사님 찾으면 됨.
-        * */
+         * 택시 경로가 시작되는 지점으로부터 가장 가까운 driver를 가져오려면, findByState(State state)로 다 가져와서 가까운 기사님 찾으면 됨.
+         * */
         Driver driver = driverRepository.findFirstByState(State.STAND).orElseThrow(() -> new CustomException(StatusCode.DRIVER_NO_AVAILABLE));
         room.setDriverId(driver.getId());
     }
-    public void depart(List<Long> go) {
 
-        for (Long userId : go) {
-            List<WaitingMemberRoom> waitingMemberRoomList = waitingMemberRoomRepository.findByWaitingMember_Id(userId);
-            for (WaitingMemberRoom waitingMemberRoom : waitingMemberRoomList) {
-                roomRepository.deleteById(waitingMemberRoom.getRoom().getRoomId());
-            }
+    //유저들이 모두 레디를 마쳐 택시를 타고 떠났다.
+    public void depart(Room room) {
+
+        //결제 기록 남겨두기
+        Receipt receipt = Receipt.builder()
+                .driverId(room.getDriverId())
+                .taxiDuration(room.getTaxiDuration())
+                .taxiFare(room.getTaxiFare())
+                .build();
+
+        //대기 목록에서 지우기
+        for (WaitingMemberRoom waitingMemberRoom: room.getWaitingMemberRoomList()) {
+            waitingMemberRepository.deleteById(waitingMemberRoom.getId());
+            receipt.getMemberIds().add(waitingMemberRoom.getId());
         }
+        Driver driver = driverRepository.findById(room.getDriverId()).orElseThrow(() -> new CustomException(StatusCode.DRIVER_NOT_EXIST));
+        driver.setState(State.DEPART);//영속성 컨텍스트에 의해 변경사항 자동으로 반영.
 
-        matched_2.forEach((key, value) -> value.removeIf(go::contains));
-        matched_3.forEach((key, value) -> value.removeIf(userIds ->
-                go.contains(userIds.getFirst()) || go.contains(userIds.getSecond())));
-        matched_4.forEach((key, value) -> value.removeIf(userIds -> userIds.stream().anyMatch(go::contains)));
+        receiptRepository.save(receipt);
+
+        room.setIsStart();
     }
 
     public void cancelMatching(Long userId) {
@@ -484,11 +500,34 @@ public class RoomService {
         matched_4.forEach((key, value) -> value.removeIf(userIds -> userIds.stream().anyMatch(userId::equals)));
     }
 
-    public void stopMatchAlgorithm(Long userId){
+    public void stopMatchAlgorithm(Long userId) {
         ScheduledFuture<?> scheduledFuture = scheduledTasks.get(userId);
         if (scheduledFuture != null) {
             scheduledFuture.cancel(false); // 스케줄러 중지
             scheduledTasks.remove(userId); // 해당 사용자의 매칭 작업을 Map에서 제거
+        }
+    }
+
+    public void ready(Long roomId, Long userId) {
+        WaitingMemberRoom waitingMemberRoom = waitingMemberRoomRepository.findByRoom_RoomIdAndWaitingMember_Id(roomId, userId)
+                .orElseThrow(() -> new CustomException(ROOM_MEMBER_NOT_EXIST));
+        waitingMemberRoom.updateReady();
+        Room room = roomRepository.findById(roomId).orElseThrow(() -> new CustomException(ROOM_NOT_EXIST));
+
+        //방에있는 모든 유저가 레디했는지?
+        boolean allReady = true;
+        RoomRes roomRes = waitingMemberRoomService.makeRoomRes(waitingMemberRoom.getRoom());
+        //ID가 roomId인 모든 WaitingMemberRoom 조회.
+        List<WaitingMemberRoom> waitingMemberRoomList = waitingMemberRoomRepository.findByRoom_RoomId(roomId);
+        for (WaitingMemberRoom WMR : waitingMemberRoomList) {
+            //roomId가 속한 모든 user 에 대해,
+            template.convertAndSend("/sub/member/" + WMR.getWaitingMember().getId(), roomRes);
+            if (!WMR.getIsReady()) allReady = false;
+        }
+
+        if (allReady) {
+            assignDriver(room);
+            depart(room);
         }
     }
 }
