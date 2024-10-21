@@ -29,10 +29,6 @@ public class WaitingMemberRoom extends BaseEntity {
     @JoinColumn(name = "room_id", nullable = false)
     private Room room;
 
-    public void setReady(Boolean isReady) {
-        this.isReady = isReady;
-    }
-
     @Builder
     public WaitingMemberRoom(WaitingMember waitingMember, Room room) {
         this.isReady = false;
@@ -40,5 +36,7 @@ public class WaitingMemberRoom extends BaseEntity {
         this.room = room;
     }
 
-    public void updateReady(){ this.isReady= !isReady; }
+    public void updateReady() {
+        this.isReady = !isReady;
+    }
 }

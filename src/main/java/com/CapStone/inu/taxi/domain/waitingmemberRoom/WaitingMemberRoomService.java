@@ -40,71 +40,60 @@ public class WaitingMemberRoomService {
         waitingMemberRoomRepository.save(waitingMemberRoom);
     }
 
-    public List<RoomRes> makeRoomResList(Long userId){
+    public List<RoomRes> makeAllRoomResList(Long userId) {
 
         List<RoomRes> roomResList = new ArrayList<>();
 
         //ID가 userId인 모든 WaitingMemberRoom 조회.
         List<WaitingMemberRoom> waitingMemberRoomList = waitingMemberRoomRepository.findByWaitingMember_Id(userId);
 
-        for(WaitingMemberRoom waitingMemberRoom : waitingMemberRoomList){
-            //userId가 속한 모든 room 에 대해,
+        for (WaitingMemberRoom waitingMemberRoom : waitingMemberRoomList) {
             Room room = waitingMemberRoom.getRoom();
-            List<WaitingMember> memberList = new ArrayList<>();
-            //그 room 에 있는 waitingMember 조회.
-            for(WaitingMemberRoom _waitingMemberRoom : room.getWaitingMemberRoomList()){
-                memberList.add(_waitingMemberRoom.getWaitingMember());
-            }
-            //member 중복제거.
-            memberList = memberList.stream().distinct().collect(Collectors.toList());
-
-            List<memberInfo> memberInfoList = new ArrayList<>();
-            //조회한 waitingMember 들로부터 memberInfo 추출.
-            for (WaitingMember waitingMember : memberList) {
-                Member member = memberRepository.findById(waitingMember.getId()).orElseThrow(()-> new CustomException(StatusCode.MEMBER_NOT_EXIST));
-                memberInfo memberInfo = new memberInfo();
-                memberInfo.setNickname(member.getNickname());
-                memberInfo.setMemberId(member.getId());
-                memberInfo.setIsReady(false);
-                memberInfoList.add(memberInfo);
-                //log.info("member name logging : " + member.getNickname());
-            }
-
-            //역직렬화.
-            Gson gson = new Gson();
-            Type listType = new TypeToken<List<pathInfo>>(){}.getType();
-            List<pathInfo> pathInfoList = gson.fromJson(room.getTaxiPath(), listType);
-
-            RoomRes roomRes = RoomRes.builder()
-                    .roomId(room.getRoomId())
-                    .currentMemberCnt(memberList.size())
-                    .pathInfoList(pathInfoList)
-                    .time(room.getTaxiDuration())
-                    .charge(room.getTaxiFare())
-                    .memberList(memberInfoList)
-                    .isStart(room.getIsStart())
-                    .build();
-
-                    roomResList.add(roomRes);
+            roomResList.add(makeRoomRes(room));
         }
         return roomResList;
     }
 
+    public RoomRes makeRoomRes(Room room) {
+        //userId가 속한 모든 room 에 대해,
+        List<WaitingMember> memberList = new ArrayList<>();
+        //그 room 에 있는 waitingMember 조회.
+        for (WaitingMemberRoom _waitingMemberRoom : room.getWaitingMemberRoomList()) {
+            memberList.add(_waitingMemberRoom.getWaitingMember());
+        }
+        //member 중복제거.
+        memberList = memberList.stream().distinct().collect(Collectors.toList());
 
-    @Transactional
-    public void ready(Long roomId, Long userId) {
-        WaitingMemberRoom waitingMemberRoom = waitingMemberRoomRepository.findByRoom_RoomIdAndWaitingMember_Id(roomId, userId)
-                .orElseThrow(() -> new CustomException(ROOM_MEMBER_NOT_EXIST));
-        waitingMemberRoom.updateReady();
+        List<memberInfo> memberInfoList = new ArrayList<>();
+        //조회한 waitingMember 들로부터 memberInfo 추출.
+        for (WaitingMember waitingMember : memberList) {
+            Member member = memberRepository.findById(waitingMember.getId()).orElseThrow(() -> new CustomException(StatusCode.MEMBER_NOT_EXIST));
 
-//        //ID가 roomId인 모든 WaitingMemberRoom 조회.
-//        List<WaitingMemberRoom> waitingMemberRoomList = waitingMemberRoomRepository.findByRoom_RoomId(roomId);
-//        for (WaitingMemberRoom WMR : waitingMemberRoomList) {
-//            //roomId가 속한 모든 user 에 대해,
-//
-//            template.convertAndSend("/sub/member/" + WMR.getWaitingMember().getId(), );
-//
-//
-//        }
+            WaitingMemberRoom waitingMemberRoom = waitingMemberRoomRepository.
+                    findByRoom_RoomIdAndWaitingMember_Id(room.getRoomId(), waitingMember.getId()).orElseThrow(() -> new CustomException(ROOM_MEMBER_NOT_EXIST));
+
+            memberInfo memberInfo = new memberInfo();
+            memberInfo.setNickname(member.getNickname());
+            memberInfo.setMemberId(member.getId());
+            memberInfo.setIsReady(waitingMemberRoom.getIsReady());
+            memberInfoList.add(memberInfo);
+            //log.info("member name logging : " + member.getNickname());
+        }
+
+        //역직렬화.
+        Gson gson = new Gson();
+        Type listType = new TypeToken<List<pathInfo>>() {
+        }.getType();
+        List<pathInfo> pathInfoList = gson.fromJson(room.getTaxiPath(), listType);
+
+        return RoomRes.builder()
+                .roomId(room.getRoomId())
+                .currentMemberCnt(memberList.size())
+                .pathInfoList(pathInfoList)
+                .time(room.getTaxiDuration())
+                .charge(room.getTaxiFare())
+                .memberList(memberInfoList)
+                .isStart(room.getIsStart())
+                .build();
     }
 }
