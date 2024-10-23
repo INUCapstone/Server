@@ -22,7 +22,7 @@ public class WaitingMemberRoom extends BaseEntity {
     private Integer charge;
 
     @Column(nullable = false)
-    private Integer fare;
+    private Integer time;
 
     @Column(nullable = false)
     private Boolean isReady;
@@ -36,11 +36,11 @@ public class WaitingMemberRoom extends BaseEntity {
     private Room room;
 
     @Builder
-    public WaitingMemberRoom(WaitingMember waitingMember, Room room, Integer fare, Integer charge) {
+    public WaitingMemberRoom(WaitingMember waitingMember, Room room, Integer time, Integer charge) {
         this.isReady = false;
         this.waitingMember = waitingMember;
         this.room = room;
-        this.fare = fare;
+        this.time = time;
         this.charge = charge;
     }
 
