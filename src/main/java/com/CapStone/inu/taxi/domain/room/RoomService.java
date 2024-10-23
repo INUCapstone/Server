@@ -570,7 +570,8 @@ public class RoomService {
         List<WaitingMemberRoom> waitingMemberRoomList = waitingMemberRoomRepository.findByRoom_RoomId(roomId);
         for (WaitingMemberRoom WMR : waitingMemberRoomList) {
             //roomId가 속한 모든 user 에 대해,
-            template.convertAndSend("/sub/member/" + WMR.getWaitingMember().getId(), roomRes);
+            //원래 roomRes였지만 전체 방을 보내야할 듯
+            template.convertAndSend("/sub/member/" + WMR.getWaitingMember().getId(), waitingMemberRoomService.makeAllRoomResList(userId));
             if (!WMR.getIsReady()) allReady = false;
         }
 
