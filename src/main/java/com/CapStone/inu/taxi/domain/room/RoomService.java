@@ -282,6 +282,7 @@ public class RoomService {
         Route route = gson.fromJson(responseEntity.getBody(), ApiResponse.class).getRoutes()[0];//1가지 경로만 탐색함.(getRoutes()[0])
 
         List<pathInfo> pathInfoList = new ArrayList<>();
+        log.info(route.getSections()==null);
         for (Section section : route.getSections()) {
             for (Road road : section.getRoads()) {
                 Double[] vertexes = road.getVertexes();
