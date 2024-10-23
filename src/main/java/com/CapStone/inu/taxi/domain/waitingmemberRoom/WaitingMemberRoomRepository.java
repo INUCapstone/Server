@@ -13,4 +13,5 @@ public interface WaitingMemberRoomRepository extends JpaRepository<WaitingMember
 
     Optional<WaitingMemberRoom> findByRoom_RoomIdAndWaitingMember_Id(Long roomId, Long memberId);
 
+    void deleteByRoom_RoomIdAndWaitingMember_Id(Long roomId, Long memberId);
 }

@@ -35,6 +35,11 @@ public class WaitingMemberRoomService {
     @Transactional
     public void makeWaitingMemberRoom(WaitingMember waitingMember, Room room, Integer time, Integer charge) {
         WaitingMemberRoom waitingMemberRoom = new WaitingMemberRoom(waitingMember, room, time, charge);
+
+        //기존에 있던 waitingMemberRoom이면, 삭제하고 다시 넣는다.
+        //(room은 Id로 체크하기때문에 자동으로 update가 됐지만, 이 경우는 중복된 값이 추가로 들어가게 되는 문제가 있었다.)
+        if (waitingMemberRoomRepository.findByRoom_RoomIdAndWaitingMember_Id(room.getRoomId(), waitingMemberRoom.getId()).isPresent())
+            waitingMemberRoomRepository.deleteByRoom_RoomIdAndWaitingMember_Id(room.getRoomId(), waitingMemberRoom.getId());
         waitingMemberRoomRepository.save(waitingMemberRoom);
     }
 
