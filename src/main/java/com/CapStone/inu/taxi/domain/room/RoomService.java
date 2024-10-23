@@ -401,6 +401,7 @@ public class RoomService {
         if (A.equals(B)) return false;
 
         Long A_Id = A.getId(), B_Id = B.getId();
+        if(A_Id.compareTo(B_Id)==0)return false;
 //        Long roomId = Math.min(A_Id, B_Id) * 100000L + Math.max(A_Id, B_Id);
 //        //이미 존재하는 방이므로, 또 만들 필요 없음. -> 이거 검사 안하는게 낫겠다. 하면, 코드 재시작할때 3~4인 매칭이 제대로 동작하지 않는다.
 //        if (roomRepository.findById(roomId).isPresent()) return false;
