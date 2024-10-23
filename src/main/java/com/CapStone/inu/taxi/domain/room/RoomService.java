@@ -342,22 +342,22 @@ public class RoomService {
     3. 마찬가지로 A-B-C가 매칭에 성공하면 A-B-C-D가 매칭에 성공했는지 추가로 확인.
     * */
     public void matchUser(Long userId) {
-//        if (!waitingMemberRepository.existsById(userId))
-//            stopMatchAlgorithm(userId);
-//        List<WaitingMember> waitingMembers = waitingMemberRepository.findAll();
-//
-//        tryMatching(userId, waitingMembers);
+       if (!waitingMemberRepository.existsById(userId))
+           stopMatchAlgorithm(userId);
+       List<WaitingMember> waitingMembers = waitingMemberRepository.findAll();
 
-        //테스트용.
-        int n = 1;
-        while (n > 0) {
-            if (!waitingMemberRepository.existsById(userId))
-                break;
-            List<WaitingMember> waitingMembers = waitingMemberRepository.findAll();
-            for (Long i = 1L; i <= 4L; i++)
-                tryMatching(i, waitingMembers);
-            n--;
-        }
+       tryMatching(userId, waitingMembers);
+
+//         //테스트용.
+//         int n = 1;
+//         while (n > 0) {
+//             if (!waitingMemberRepository.existsById(userId))
+//                 break;
+//             List<WaitingMember> waitingMembers = waitingMemberRepository.findAll();
+//             for (Long i = 1L; i <= 4L; i++)
+//                 tryMatching(i, waitingMembers);
+//             n--;
+//         }
     }
 
     private void tryMatching(Long userId, List<WaitingMember> waitingMembers) {
@@ -386,7 +386,7 @@ public class RoomService {
                 isMatched3(A, B);
             }
 
-            //template.convertAndSend("/sub/member/" + userId, waitingMemberRoomService.makeAllRoomResList(userId));
+            template.convertAndSend("/sub/member/" + userId, waitingMemberRoomService.makeAllRoomResList(userId));
         }
     }
 
