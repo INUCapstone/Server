@@ -35,8 +35,8 @@ public class WaitingMemberRoomService {
     private final SimpMessagingTemplate template;
 
     @Transactional
-    public void makeWaitingMemberRoom(WaitingMember waitingMember, Room room) {
-        WaitingMemberRoom waitingMemberRoom = new WaitingMemberRoom(waitingMember, room);
+    public void makeWaitingMemberRoom(WaitingMember waitingMember, Room room, Integer time, Integer charge) {
+        WaitingMemberRoom waitingMemberRoom = new WaitingMemberRoom(waitingMember, room, time, charge);
         waitingMemberRoomRepository.save(waitingMemberRoom);
     }
 
@@ -49,15 +49,14 @@ public class WaitingMemberRoomService {
 
         for (WaitingMemberRoom waitingMemberRoom : waitingMemberRoomList) {
             Room room = waitingMemberRoom.getRoom();
-            roomResList.add(makeRoomRes(room));
+            roomResList.add(makeRoomRes(room, userId));
         }
         return roomResList;
     }
 
-    public RoomRes makeRoomRes(Room room) {
-        //userId가 속한 모든 room 에 대해,
+    public RoomRes makeRoomRes(Room room, Long userId) {
         List<WaitingMember> memberList = new ArrayList<>();
-        //그 room 에 있는 waitingMember 조회.
+        //userId가 속한 room 에 대해, 그 room 에 있는 waitingMember 조회.
         for (WaitingMemberRoom _waitingMemberRoom : room.getWaitingMemberRoomList()) {
             memberList.add(_waitingMemberRoom.getWaitingMember());
         }
@@ -80,18 +79,21 @@ public class WaitingMemberRoomService {
             //log.info("member name logging : " + member.getNickname());
         }
 
-        //역직렬화.
+        //택시 경로 -> 역직렬화.
         Gson gson = new Gson();
         Type listType = new TypeToken<List<pathInfo>>() {
         }.getType();
         List<pathInfo> pathInfoList = gson.fromJson(room.getTaxiPath(), listType);
 
+        WaitingMemberRoom waitingMemberRoom = waitingMemberRoomRepository.findByRoom_RoomIdAndWaitingMember_Id(room.getRoomId(), userId)
+                .orElseThrow(() -> new CustomException(StatusCode.MEMBER_NOT_EXIST));
+
         return RoomRes.builder()
                 .roomId(room.getRoomId())
                 .currentMemberCnt(memberList.size())
                 .pathInfoList(pathInfoList)
-                .time(room.getTaxiDuration())
-                .charge(room.getTaxiFare())
+                .time(waitingMemberRoom.getFare())
+                .charge(waitingMemberRoom.getCharge())
                 .memberList(memberInfoList)
                 .isStart(room.getIsStart())
                 .build();

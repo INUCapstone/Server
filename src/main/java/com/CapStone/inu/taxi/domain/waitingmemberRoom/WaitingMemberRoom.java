@@ -19,6 +19,12 @@ public class WaitingMemberRoom extends BaseEntity {
     private Long id;
 
     @Column(nullable = false)
+    private Integer charge;
+
+    @Column(nullable = false)
+    private Integer fare;
+
+    @Column(nullable = false)
     private Boolean isReady;
 
     @ManyToOne
@@ -30,10 +36,12 @@ public class WaitingMemberRoom extends BaseEntity {
     private Room room;
 
     @Builder
-    public WaitingMemberRoom(WaitingMember waitingMember, Room room) {
+    public WaitingMemberRoom(WaitingMember waitingMember, Room room, Integer fare, Integer charge) {
         this.isReady = false;
         this.waitingMember = waitingMember;
         this.room = room;
+        this.fare = fare;
+        this.charge = charge;
     }
 
     public void updateReady() {

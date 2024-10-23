@@ -229,6 +229,41 @@ public class RoomService {
         return EARTH_RADIUS * c;
     }
 
+    public Integer durationCalculator(Long userId, List<Section> sections) {
+        Integer totalDuration = 0;
+
+        WaitingMember waitingMember = waitingMemberRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(StatusCode.MEMBER_NOT_EXIST));
+
+        Double endX = waitingMember.getEndX();
+        Double endY = waitingMember.getEndY();
+
+        // 각 섹션을 순회하면서 목적지에 도달하기 전까지의 duration을 누적
+        for (Section section : sections) {
+            for (Road road : section.getRoads()) {
+                Double[] vertexes = road.getVertexes();
+                // vertexes 배열을 순회하면서 목적지 좌표와 일치하는지 확인
+                for (int i = 0; i + 1 < vertexes.length; i += 2) {
+                    Double vertexX = vertexes[i];
+                    Double vertexY = vertexes[i + 1];
+
+                    // 해당 좌표가 유저의 목적지(endX, endY)와 일치하는지 확인
+                    if (vertexX.equals(endX) && vertexY.equals(endY)) {
+                        // 현재 섹션의 duration을 포함한 총 시간을 반환
+                        totalDuration += section.getDuration();
+                        return totalDuration;
+                    }
+                }
+            }
+            // 현재 섹션의 duration을 누적
+            totalDuration += section.getDuration();
+        }
+
+        // 모든 섹션을 다 지나도 목적지에 도달하지 못한 경우 -1 반환 (에러 처리)
+        return -1;
+    }
+
+
     //매칭이 성공한 시점에 방 생성, 생성된 정보를 프론트에 넘겨줌.
     public void makeRoom(ResponseEntity<String> responseEntity, List<WaitingMember> memberList) {
         log.info("방생성 로직 시작");
@@ -250,7 +285,7 @@ public class RoomService {
         for (Section section : route.getSections()) {
             for (Road road : section.getRoads()) {
                 Double[] vertexes = road.getVertexes();
-                for (int i = 0; i < vertexes.length; i += 2) {
+                for (int i = 0; i + 1 < vertexes.length; i += 2) {
                     double x = vertexes[i], y = vertexes[i + 1];
                     pathInfo waypoint = new pathInfo();
                     waypoint.setX(x);
@@ -278,7 +313,14 @@ public class RoomService {
 
         //waitingmemberroom 만들기. memberList사람수만큼.
         for (WaitingMember waitingMember : memberList) {
-            waitingMemberRoomService.makeWaitingMemberRoom(waitingMember, room);
+            //금액 -> 1/n
+            Integer charge = (room.getTaxiFare() + memberList.size() - 1) / memberList.size();
+            //소요 시간 -> responseEntity를 보고 알 수 있음.
+            Integer time = durationCalculator(waitingMember.getId(), Arrays.stream(route.getSections()).toList());
+
+            System.out.println("[member " + waitingMember.getId() + "] time: " + time + ", charge: " + charge);
+
+            waitingMemberRoomService.makeWaitingMemberRoom(waitingMember, room, time, charge);
         }
 
         log.info("방 생성 완료");
@@ -300,22 +342,22 @@ public class RoomService {
     3. 마찬가지로 A-B-C가 매칭에 성공하면 A-B-C-D가 매칭에 성공했는지 추가로 확인.
     * */
     public void matchUser(Long userId) {
-        if (!waitingMemberRepository.existsById(userId))
-            stopMatchAlgorithm(userId);
-        List<WaitingMember> waitingMembers = waitingMemberRepository.findAll();
+       if (!waitingMemberRepository.existsById(userId))
+           stopMatchAlgorithm(userId);
+       List<WaitingMember> waitingMembers = waitingMemberRepository.findAll();
 
-        tryMatching(userId, waitingMembers);
+       tryMatching(userId, waitingMembers);
 
-//        //테스트용.
-//        int n = 1;
-//        while (n > 0) {
-//            if (!waitingMemberRepository.existsById(userId))
-//                break;
-//            List<WaitingMember> waitingMembers = waitingMemberRepository.findAll();
-//            for(Long i=1L;i<=4L;i++)
-//                tryMatching(i,waitingMembers);
-//            n--;
-//        }
+//         //테스트용.
+//         int n = 1;
+//         while (n > 0) {
+//             if (!waitingMemberRepository.existsById(userId))
+//                 break;
+//             List<WaitingMember> waitingMembers = waitingMemberRepository.findAll();
+//             for (Long i = 1L; i <= 4L; i++)
+//                 tryMatching(i, waitingMembers);
+//             n--;
+//         }
     }
 
     private void tryMatching(Long userId, List<WaitingMember> waitingMembers) {
@@ -473,7 +515,7 @@ public class RoomService {
                 .build();
 
         //대기 목록에서 지우기
-        for (WaitingMemberRoom waitingMemberRoom: room.getWaitingMemberRoomList()) {
+        for (WaitingMemberRoom waitingMemberRoom : room.getWaitingMemberRoomList()) {
             waitingMemberRepository.deleteById(waitingMemberRoom.getId());
             receipt.getMemberIds().add(waitingMemberRoom.getId());
         }
@@ -516,7 +558,7 @@ public class RoomService {
 
         //방에있는 모든 유저가 레디했는지?
         boolean allReady = true;
-        RoomRes roomRes = waitingMemberRoomService.makeRoomRes(waitingMemberRoom.getRoom());
+        RoomRes roomRes = waitingMemberRoomService.makeRoomRes(waitingMemberRoom.getRoom(), userId);
         //ID가 roomId인 모든 WaitingMemberRoom 조회.
         List<WaitingMemberRoom> waitingMemberRoomList = waitingMemberRoomRepository.findByRoom_RoomId(roomId);
         for (WaitingMemberRoom WMR : waitingMemberRoomList) {
