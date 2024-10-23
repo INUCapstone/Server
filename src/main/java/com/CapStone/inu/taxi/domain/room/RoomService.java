@@ -349,6 +349,7 @@ public class RoomService {
     3. 마찬가지로 A-B-C가 매칭에 성공하면 A-B-C-D가 매칭에 성공했는지 추가로 확인.
     * */
     public void matchUser(Long userId) {
+        log.info("매치 유저 실행");
         if (!waitingMemberRepository.existsById(userId))
             stopMatchAlgorithm(userId);
         List<WaitingMember> waitingMembers = waitingMemberRepository.findAll();
@@ -414,7 +415,7 @@ public class RoomService {
 
         //초당 weight m씩 반경을 넓혀가며 상대방을 찾음.
         LocalDateTime now = LocalDateTime.now();
-        double weight = (double) 3.0 / (double) 1000;
+        double weight = (double) 4.5 / (double) 1000;
         double A_range = Duration.between(A.getCreatedDate(), now).getSeconds() * weight;
         double B_range = Duration.between(B.getCreatedDate(), now).getSeconds() * weight;
 
@@ -532,6 +533,7 @@ public class RoomService {
         receiptRepository.save(receipt);
 
         room.setIsStart();
+        log.info("모두 준비 완료");
     }
 
     public void cancelMatching(Long userId) {

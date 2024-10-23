@@ -17,6 +17,7 @@ public class WaitingMemberRoomController {
     // 경로는 pub/match/{memberId}로 메세지를 보내야한다.
     @MessageMapping("ready/{roomId}/{memberId}")
     public void startMatching(@DestinationVariable Long roomId, @DestinationVariable Long memberId) {
+        log.info("레디 버튼 실행");
         roomService.ready(roomId,memberId);
     }
 }
