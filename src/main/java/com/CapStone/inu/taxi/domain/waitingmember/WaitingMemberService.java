@@ -23,7 +23,7 @@ public class WaitingMemberService {
     //유저가 매칭을 취소했다.
     @Transactional
     public void cancelMatching(Long userId) {
-        waitingMemberRepository.deleteById(userId);
         roomService.cancelMatching(userId);
+        waitingMemberRepository.deleteById(userId);
     }
 }
