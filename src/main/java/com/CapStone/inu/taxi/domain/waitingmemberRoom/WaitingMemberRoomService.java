@@ -92,7 +92,7 @@ public class WaitingMemberRoomService {
                 .roomId(room.getRoomId())
                 .currentMemberCnt(memberList.size())
                 .pathInfoList(pathInfoList)
-                .time(waitingMemberRoom.getFare())
+                .time(waitingMemberRoom.getTime())
                 .charge(waitingMemberRoom.getCharge())
                 .memberList(memberInfoList)
                 .isStart(room.getIsStart())

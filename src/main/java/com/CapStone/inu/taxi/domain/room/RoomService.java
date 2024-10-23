@@ -282,7 +282,13 @@ public class RoomService {
         Route route = gson.fromJson(responseEntity.getBody(), ApiResponse.class).getRoutes()[0];//1가지 경로만 탐색함.(getRoutes()[0])
 
         List<pathInfo> pathInfoList = new ArrayList<>();
-        log.info(route.getSections()==null);
+
+        log.info("route size:" + gson.fromJson(responseEntity.getBody(), ApiResponse.class).getRoutes().length);
+        log.info("room id : " + roomId);
+        log.info("sections size : " + route.getSections().length);
+        log.info("fare: " + route.getSummary().getFare().getTaxi() + route.getSummary().getFare().getToll());
+        log.info("duration : " + route.getSummary().getDuration());
+
         for (Section section : route.getSections()) {
             for (Road road : section.getRoads()) {
                 Double[] vertexes = road.getVertexes();
@@ -343,11 +349,11 @@ public class RoomService {
     3. 마찬가지로 A-B-C가 매칭에 성공하면 A-B-C-D가 매칭에 성공했는지 추가로 확인.
     * */
     public void matchUser(Long userId) {
-       if (!waitingMemberRepository.existsById(userId))
-           stopMatchAlgorithm(userId);
-       List<WaitingMember> waitingMembers = waitingMemberRepository.findAll();
+        if (!waitingMemberRepository.existsById(userId))
+            stopMatchAlgorithm(userId);
+        List<WaitingMember> waitingMembers = waitingMemberRepository.findAll();
 
-       tryMatching(userId, waitingMembers);
+        tryMatching(userId, waitingMembers);
 
 //         //테스트용.
 //         int n = 1;
@@ -387,7 +393,7 @@ public class RoomService {
                 isMatched3(A, B);
             }
 
-            template.convertAndSend("/sub/member/" + userId, waitingMemberRoomService.makeAllRoomResList(userId));
+            //template.convertAndSend("/sub/member/" + userId, waitingMemberRoomService.makeAllRoomResList(userId));
         }
     }
 
