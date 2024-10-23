@@ -289,7 +289,6 @@ public class RoomService {
         log.info("fare: " + route.getSummary().getFare().getTaxi() + route.getSummary().getFare().getToll());
         log.info("duration : " + route.getSummary().getDuration());
 
-
         for (Section section : route.getSections()) {
             for (Road road : section.getRoads()) {
                 Double[] vertexes = road.getVertexes();
