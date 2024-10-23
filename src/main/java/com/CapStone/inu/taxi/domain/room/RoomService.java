@@ -414,7 +414,7 @@ public class RoomService {
 
         //초당 weight m씩 반경을 넓혀가며 상대방을 찾음.
         LocalDateTime now = LocalDateTime.now();
-        double weight = (double) 0.03 / (double) 1000;
+        double weight = (double) 0.3 / (double) 1000;
         double A_range = Duration.between(A.getCreatedDate(), now).getSeconds() * weight;
         double B_range = Duration.between(B.getCreatedDate(), now).getSeconds() * weight;
 
