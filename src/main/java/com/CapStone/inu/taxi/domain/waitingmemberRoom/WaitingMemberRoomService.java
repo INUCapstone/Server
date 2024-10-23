@@ -83,6 +83,8 @@ public class WaitingMemberRoomService {
         }.getType();
         List<pathInfo> pathInfoList = gson.fromJson(room.getTaxiPath(), listType);
 
+        log.info(String.valueOf(room.getRoomId()));
+        log.info(String.valueOf(userId));
         WaitingMemberRoom waitingMemberRoom = waitingMemberRoomRepository.findByRoom_RoomIdAndWaitingMember_Id(room.getRoomId(), userId)
                 .orElseThrow(() -> new CustomException(StatusCode.MEMBER_NOT_EXIST));
 
