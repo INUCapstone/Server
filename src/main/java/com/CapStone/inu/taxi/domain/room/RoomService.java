@@ -1,19 +1,11 @@
 package com.CapStone.inu.taxi.domain.room;
 
-import com.CapStone.inu.taxi.domain.driver.Driver;
-import com.CapStone.inu.taxi.domain.driver.DriverRepository;
-import com.CapStone.inu.taxi.domain.member.Member;
-import com.CapStone.inu.taxi.domain.member.MemberRepository;
-import com.CapStone.inu.taxi.domain.receipt.Receipt;
-import com.CapStone.inu.taxi.domain.receipt.ReceiptRepository;
 import com.CapStone.inu.taxi.domain.room.dto.kakao.*;
-import com.CapStone.inu.taxi.domain.room.dto.response.RoomRes;
 import com.CapStone.inu.taxi.domain.waitingmember.WaitingMember;
 import com.CapStone.inu.taxi.domain.waitingmember.WaitingMemberRepository;
 import com.CapStone.inu.taxi.domain.waitingmemberRoom.WaitingMemberRoom;
 import com.CapStone.inu.taxi.domain.waitingmemberRoom.WaitingMemberRoomRepository;
 import com.CapStone.inu.taxi.domain.waitingmemberRoom.WaitingMemberRoomService;
-import com.CapStone.inu.taxi.global.common.State;
 import com.CapStone.inu.taxi.global.common.StatusCode;
 import com.CapStone.inu.taxi.global.exception.CustomException;
 import com.google.gson.Gson;
@@ -34,7 +26,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 
-import static com.CapStone.inu.taxi.global.common.StatusCode.*;
+import static com.CapStone.inu.taxi.global.common.StatusCode.ROOM_MEMBER_NOT_EXIST;
+import static com.CapStone.inu.taxi.global.common.StatusCode.ROOM_NOT_EXIST;
 
 @Service
 @Transactional
@@ -46,9 +39,6 @@ public class RoomService {
     private final WaitingMemberRoomRepository waitingMemberRoomRepository;
     private final SimpMessagingTemplate template;
     private final WaitingMemberRoomService waitingMemberRoomService;
-    private final DriverRepository driverRepository;
-    private final ReceiptRepository receiptRepository;
-    private final MemberRepository memberRepository;
     private final TaskScheduler taskScheduler; // 비동기 작업을 예약하고 실행하는 데 사용, 직접 설정 시 매개변수 활요범위가 높다.
     // 여러 사용자의 매칭 작업을 관리할 수 있도록 Map을 사용
     private final Map<Long, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
@@ -494,46 +484,6 @@ public class RoomService {
         }
     }
 
-    public void assignDriver(Room room) {
-
-        /*일단 findFirstByState(State.STAND)로 아무나 데려오자.
-
-         * 방에서 모든 유저가 레디 -> 대기중인 기사님에게 신호를 보냄 -> 기사님이 수락하면 room에 기사님이 배정됨
-         * 위의 로직으로 가려면, request와 response dto를 주고받아서 해야될것같고, 이렇게 하면 안됨.
-
-         * 택시 경로가 시작되는 지점으로부터 가장 가까운 driver를 가져오려면, findByState(State state)로 다 가져와서 가까운 기사님 찾으면 됨.
-         * */
-        Driver driver = driverRepository.findFirstByState(State.STAND).orElseThrow(() -> new CustomException(StatusCode.DRIVER_NO_AVAILABLE));
-        room.setDriverId(driver.getId());
-    }
-
-    //유저들이 모두 레디를 마쳐 택시를 타고 떠났다.
-    public void depart(Room room) {
-
-        //결제 기록 남겨두기
-        Receipt receipt = Receipt.builder()
-                .driverId(room.getDriverId())
-                .taxiDuration(room.getTaxiDuration())
-                .taxiFare(room.getTaxiFare())
-                .build();
-
-        //대기 목록에서 지우기
-        for (WaitingMemberRoom waitingMemberRoom : room.getWaitingMemberRoomList()) {
-            waitingMemberRepository.deleteById(waitingMemberRoom.getId());
-            receipt.getMemberIds().add(waitingMemberRoom.getId());
-        }
-        Driver driver = driverRepository.findById(room.getDriverId()).orElseThrow(() -> new CustomException(StatusCode.DRIVER_NOT_EXIST));
-        driver.setState(State.DEPART);//영속성 컨텍스트에 의해 변경사항 자동으로 반영.
-
-        receiptRepository.save(receipt);
-
-        //유저 금액 차감 기능 구현
-        for (WaitingMemberRoom waitingMemberRoom : room.getWaitingMemberRoomList()) {
-            Member member = memberRepository.findById(waitingMemberRoom.getWaitingMember().getId())
-                    .orElseThrow(() -> new CustomException(MEMBER_NOT_EXIST));
-            member.chargePoint(-waitingMemberRoom.getCharge());
-        }
-    }
 
     public void cancelMatching(Long userId) {
 
@@ -577,7 +527,10 @@ public class RoomService {
 
         if (allReady) {
             room.setIsStart();
-            template.convertAndSend("/sub/member/" + userId, waitingMemberRoomService.makeRoomRes(room, userId));
+            for (WaitingMemberRoom WMR : waitingMemberRoomList){
+                startMatchAlgorithm(WMR.getWaitingMember().getId());
+                template.convertAndSend("/sub/member/" + WMR.getWaitingMember().getId(), waitingMemberRoomService.makeRoomRes(room,WMR.getWaitingMember().getId()));
+            }
             log.info("모두 준비 완료");
         }
     }
