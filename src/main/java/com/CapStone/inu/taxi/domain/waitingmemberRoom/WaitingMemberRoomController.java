@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -18,6 +20,11 @@ public class WaitingMemberRoomController {
     @MessageMapping("ready/{roomId}/{memberId}")
     public void startMatching(@DestinationVariable Long roomId, @DestinationVariable Long memberId) {
         log.info("레디 버튼 실행");
+        roomService.ready(roomId,memberId);
+    }
+
+    @GetMapping(value = "/test/ready/{roomId}/{memberId}")
+    public void test(@PathVariable Long roomId,@PathVariable Long memberId) {
         roomService.ready(roomId,memberId);
     }
 }
