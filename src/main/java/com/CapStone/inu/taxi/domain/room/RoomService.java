@@ -519,12 +519,12 @@ public class RoomService {
         boolean allReady = true;
         //ID가 roomId인 모든 WaitingMemberRoom 조회.
         List<WaitingMemberRoom> waitingMemberRoomList = waitingMemberRoomRepository.findByRoom_RoomId(roomId);
-        for (WaitingMemberRoom WMR : waitingMemberRoomList) {
-            //roomId가 속한 모든 user 에 대해,
-            //원래 roomRes였지만 전체 방을 보내야할 듯
-            template.convertAndSend("/sub/member/" + WMR.getWaitingMember().getId(), waitingMemberRoomService.makeAllRoomResList(userId));
-            if (!WMR.getIsReady()) allReady = false;
-        }
+
+        for (WaitingMemberRoom WMR : waitingMemberRoomList)
+            if (!WMR.getIsReady()) {
+                allReady = false;
+                break;
+            }
 
         if (allReady) {
             room.setIsStart();
@@ -534,6 +534,11 @@ public class RoomService {
                 template.convertAndSend("/sub/member/" + WMR.getWaitingMember().getId(), roomResList);
             }
             log.info("모두 준비 완료");
+        } else {
+            for (WaitingMemberRoom WMR : waitingMemberRoomList) {
+                //roomId가 속한 모든 user 에 대해, 전체 방을 보내준다.
+                template.convertAndSend("/sub/member/" + WMR.getWaitingMember().getId(), waitingMemberRoomService.makeAllRoomResList(WMR.getWaitingMember().getId()));
+            }
         }
     }
 }
