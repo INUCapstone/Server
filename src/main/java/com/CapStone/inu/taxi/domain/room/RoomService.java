@@ -565,9 +565,8 @@ public class RoomService {
         waitingMemberRoom.updateReady();
         Room room = roomRepository.findById(roomId).orElseThrow(() -> new CustomException(ROOM_NOT_EXIST));
 
-        //방에있는 모든 유저가 레디했는지?
+        // 방에있는 모든 유저가 레디했는지?
         boolean allReady = true;
-        RoomRes roomRes = waitingMemberRoomService.makeRoomRes(waitingMemberRoom.getRoom(), userId);
         //ID가 roomId인 모든 WaitingMemberRoom 조회.
         List<WaitingMemberRoom> waitingMemberRoomList = waitingMemberRoomRepository.findByRoom_RoomId(roomId);
         for (WaitingMemberRoom WMR : waitingMemberRoomList) {
