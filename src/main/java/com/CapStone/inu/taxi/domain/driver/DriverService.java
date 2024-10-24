@@ -7,7 +7,6 @@ import com.CapStone.inu.taxi.domain.receipt.Receipt;
 import com.CapStone.inu.taxi.domain.receipt.ReceiptRepository;
 import com.CapStone.inu.taxi.domain.room.Room;
 import com.CapStone.inu.taxi.domain.room.RoomRepository;
-import com.CapStone.inu.taxi.domain.waitingmember.WaitingMemberRepository;
 import com.CapStone.inu.taxi.domain.waitingmemberRoom.WaitingMemberRoom;
 import com.CapStone.inu.taxi.global.common.State;
 import com.CapStone.inu.taxi.global.common.StatusCode;
@@ -25,7 +24,6 @@ import static com.CapStone.inu.taxi.global.common.StatusCode.ROOM_NOT_EXIST;
 @RequiredArgsConstructor
 public class DriverService {
     private final DriverRepository driverRepository;
-    private final WaitingMemberRepository waitingMemberRepository;
     private final RoomRepository roomRepository;
     private final MemberRepository memberRepository;
     private final ReceiptRepository receiptRepository;
@@ -56,10 +54,7 @@ public class DriverService {
                 .taxiFare(room.getTaxiFare())
                 .build();
 
-        //대기 목록에서 지우기
         for (WaitingMemberRoom waitingMemberRoom : room.getWaitingMemberRoomList()) {
-            // 출발하고 웹소켓 끊으니까 굳이 여기서 없앨 필요는 없다.
-            //waitingMemberRepository.deleteById(waitingMemberRoom.getId());
             receipt.getMemberIds().add(waitingMemberRoom.getId());
         }
         driver.setState(State.DEPART);//영속성 컨텍스트에 의해 변경사항 자동으로 반영.
