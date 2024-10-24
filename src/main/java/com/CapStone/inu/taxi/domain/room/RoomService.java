@@ -1,6 +1,7 @@
 package com.CapStone.inu.taxi.domain.room;
 
 import com.CapStone.inu.taxi.domain.room.dto.kakao.*;
+import com.CapStone.inu.taxi.domain.room.dto.response.RoomRes;
 import com.CapStone.inu.taxi.domain.waitingmember.WaitingMember;
 import com.CapStone.inu.taxi.domain.waitingmember.WaitingMemberRepository;
 import com.CapStone.inu.taxi.domain.waitingmemberRoom.WaitingMemberRoom;
@@ -527,9 +528,10 @@ public class RoomService {
 
         if (allReady) {
             room.setIsStart();
-            for (WaitingMemberRoom WMR : waitingMemberRoomList){
-                startMatchAlgorithm(WMR.getWaitingMember().getId());
-                template.convertAndSend("/sub/member/" + WMR.getWaitingMember().getId(), waitingMemberRoomService.makeRoomRes(room,WMR.getWaitingMember().getId()));
+            for (WaitingMemberRoom WMR : waitingMemberRoomList) {
+                stopMatchAlgorithm(WMR.getWaitingMember().getId());
+                List<RoomRes> roomResList = List.of(waitingMemberRoomService.makeRoomRes(room, WMR.getWaitingMember().getId()));
+                template.convertAndSend("/sub/member/" + WMR.getWaitingMember().getId(), roomResList);
             }
             log.info("모두 준비 완료");
         }
