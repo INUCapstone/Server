@@ -2,6 +2,8 @@ package com.CapStone.inu.taxi.domain.room;
 
 import com.CapStone.inu.taxi.domain.driver.Driver;
 import com.CapStone.inu.taxi.domain.driver.DriverRepository;
+import com.CapStone.inu.taxi.domain.member.Member;
+import com.CapStone.inu.taxi.domain.member.MemberRepository;
 import com.CapStone.inu.taxi.domain.receipt.Receipt;
 import com.CapStone.inu.taxi.domain.receipt.ReceiptRepository;
 import com.CapStone.inu.taxi.domain.room.dto.kakao.*;
@@ -32,8 +34,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 
-import static com.CapStone.inu.taxi.global.common.StatusCode.ROOM_MEMBER_NOT_EXIST;
-import static com.CapStone.inu.taxi.global.common.StatusCode.ROOM_NOT_EXIST;
+import static com.CapStone.inu.taxi.global.common.StatusCode.*;
 
 @Service
 @Transactional
@@ -47,6 +48,7 @@ public class RoomService {
     private final WaitingMemberRoomService waitingMemberRoomService;
     private final DriverRepository driverRepository;
     private final ReceiptRepository receiptRepository;
+    private final MemberRepository memberRepository;
     private final TaskScheduler taskScheduler; // 비동기 작업을 예약하고 실행하는 데 사용, 직접 설정 시 매개변수 활요범위가 높다.
     // 여러 사용자의 매칭 작업을 관리할 수 있도록 Map을 사용
     private final Map<Long, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
@@ -76,7 +78,6 @@ public class RoomService {
         RestTemplate restTemplate = new RestTemplate();
 
         // 외부 API로부터 받은 응답 반환
-
         return restTemplate.exchange(
                 url, HttpMethod.POST, entity, String.class
         );
@@ -282,12 +283,6 @@ public class RoomService {
         Route route = gson.fromJson(responseEntity.getBody(), ApiResponse.class).getRoutes()[0];//1가지 경로만 탐색함.(getRoutes()[0])
 
         List<pathInfo> pathInfoList = new ArrayList<>();
-
-        log.info("route size:" + gson.fromJson(responseEntity.getBody(), ApiResponse.class).getRoutes().length);
-        log.info("room id : " + roomId);
-        log.info("sections size : " + route.getSections().length);
-        log.info("fare: " + route.getSummary().getFare().getTaxi() + route.getSummary().getFare().getToll());
-        log.info("duration : " + route.getSummary().getDuration());
 
         for (Section section : route.getSections()) {
             for (Road road : section.getRoads()) {
@@ -532,8 +527,12 @@ public class RoomService {
 
         receiptRepository.save(receipt);
 
-        room.setIsStart();
-        log.info("모두 준비 완료");
+        //유저 금액 차감 기능 구현
+        for (WaitingMemberRoom waitingMemberRoom : room.getWaitingMemberRoomList()) {
+            Member member = memberRepository.findById(waitingMemberRoom.getWaitingMember().getId())
+                    .orElseThrow(() -> new CustomException(MEMBER_NOT_EXIST));
+            member.chargePoint(-waitingMemberRoom.getCharge());
+        }
     }
 
     public void cancelMatching(Long userId) {
@@ -577,8 +576,9 @@ public class RoomService {
         }
 
         if (allReady) {
-            assignDriver(room);
-            depart(room);
+            room.setIsStart();
+            template.convertAndSend("/sub/member/" + userId, waitingMemberRoomService.makeRoomRes(room, userId));
+            log.info("모두 준비 완료");
         }
     }
 }
