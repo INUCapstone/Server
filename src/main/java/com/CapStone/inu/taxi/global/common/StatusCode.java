@@ -28,6 +28,8 @@ public enum StatusCode {
     PASSWORD_INCORRECT(BAD_REQUEST, "비밀번호가 일치하지 않습니다."),
     INPUT_VALUE_INVALID(BAD_REQUEST, "유효하지 않은 입력입니다."),
     PROFILE_INVALID(BAD_REQUEST, "유효하지 않은 프로필 이미지입니다."),
+    INSUFFICIENT_POINT(BAD_REQUEST, "잔액이 부족합니다."),
+
 
     /* 401 UNAUTHORIZED : 비인증 사용자 */
     ACCESS_TOKEN_INVALID(UNAUTHORIZED, "jwt 토큰이 유효하지 않습니다."),
@@ -48,7 +50,6 @@ public enum StatusCode {
     NICKNAME_DUPLICATED(CONFLICT, "이미 존재하는 닉네임입니다."),
     ROOM_DUPLICATED(CONFLICT, "이미 채팅방에 존재하는 멤버입니다."),
     PHONE_NUMBER_DUPLICATED(CONFLICT, "이미 존재하는 휴대폰 번호입니다."),
-
     /* 429 TOO MANY REQUESTS : 요청이 많아 처리할 수 없음 */
     LOCK_ACQUISITION_TOO_MANY_REQUESTS(TOO_MANY_REQUESTS, "락 획득 시도가 너무 많습니다. 잠시 후 다시 시도하세요.");
 
