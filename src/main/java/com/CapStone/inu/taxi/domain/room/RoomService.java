@@ -288,7 +288,6 @@ public class RoomService {
         for (WaitingMember waitingMember : memberList) {
             //금액 -> 1/n
             Integer charge = (room.getTaxiFare() + memberList.size() - 1) / memberList.size();
-            //소요 시간 -> room을 보고 알 수 있음.
             Integer time = 0, cnt = 0;
             for (int i = 0; i < optimalOrder.size(); i++) {
                 if (waitingMember.getId().equals(optimalOrder.get(i).getId())) cnt++;
@@ -296,7 +295,7 @@ public class RoomService {
                 if (cnt == 2) break;
                 time += route.getSections()[i].getDuration();
             }
-            
+
             //초 -> 분으로 변환 (반올림)
             time = time % 60 >= 30 ? time / 60 + 1 : time / 60;
             waitingMemberRoomService.makeWaitingMemberRoom(waitingMember, room, time, charge);
