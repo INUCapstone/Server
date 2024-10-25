@@ -59,14 +59,14 @@ public class DriverService {
         List<Integer> pickupTimes = new ArrayList<>();
         List<Map<String, Double>> waypoints = new ArrayList<>();
 
-        Map<String, Double> waypoint = new HashMap<>();
-        waypoint.put("x", driver.getX());
-        waypoint.put("y", driver.getY());
-        waypoints.add(waypoint);
+        Map<String, Double> driverPoint = new HashMap<>();
+        driverPoint.put("x", driver.getX());
+        driverPoint.put("y", driver.getY());
+        waypoints.add(driverPoint);
 
         List<WaitingMember> optimalOrder = roomService.getOptimalOrder(waitingMemberList);
         for (int i = 0; i * 2 < optimalOrder.size(); i++) {
-            waypoint.clear();
+            Map<String, Double> waypoint = new HashMap<>();
             waypoint.put("x", optimalOrder.get(i).getStartX());
             waypoint.put("y", optimalOrder.get(i).getStartY());
             waypoints.add(waypoint);
@@ -78,14 +78,11 @@ public class DriverService {
         Route route = gson.fromJson(direction.getBody(), ApiResponse.class).getRoutes()[0];//1가지 경로만 탐색함.(getRoutes()[0])
 
         for (WaitingMember waitingMember : waitingMemberList) {
-            //소요 시간 -> room을 보고 알 수 있음.
-            Integer time = 0, cnt = 0;
-            for (int i = 0; i * 2 < optimalOrder.size(); i++) {
+            Integer time = 0;
+            for (int i = 0; i < optimalOrder.size(); i++) {
                 //기사님이 Origin (출발지)이 되어서, time+=하는 코드 위치가 소요시간 구하는 코드와 약간 다름.
                 time += route.getSections()[i].getDuration();
-                if (waitingMember.getId().equals(optimalOrder.get(i).getId())) cnt++;
-                //시작점이 기사님이 픽업하는 지점. (cnt==1)
-                if (cnt == 1) break;
+                if (waitingMember.getId().equals(optimalOrder.get(i).getId())) break;
             }
             //초 -> 분으로 변환 (반올림)
             pickupTimes.add(time % 60 >= 30 ? time / 60 + 1 : time / 60);
