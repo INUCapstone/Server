@@ -1,5 +1,7 @@
 package com.CapStone.inu.taxi.domain.room;
 
+import com.CapStone.inu.taxi.domain.member.Member;
+import com.CapStone.inu.taxi.domain.member.MemberRepository;
 import com.CapStone.inu.taxi.domain.room.dto.kakao.*;
 import com.CapStone.inu.taxi.domain.room.dto.response.RoomRes;
 import com.CapStone.inu.taxi.domain.waitingmember.WaitingMember;
@@ -27,8 +29,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 
-import static com.CapStone.inu.taxi.global.common.StatusCode.ROOM_MEMBER_NOT_EXIST;
-import static com.CapStone.inu.taxi.global.common.StatusCode.ROOM_NOT_EXIST;
+import static com.CapStone.inu.taxi.global.common.StatusCode.*;
 
 @Service
 @Transactional
@@ -36,6 +37,7 @@ import static com.CapStone.inu.taxi.global.common.StatusCode.ROOM_NOT_EXIST;
 @Log4j2
 public class RoomService {
     private final WaitingMemberRepository waitingMemberRepository;
+    private final MemberRepository memberRepository;
     private final RoomRepository roomRepository;
     private final WaitingMemberRoomRepository waitingMemberRoomRepository;
     private final SimpMessagingTemplate template;
@@ -74,20 +76,17 @@ public class RoomService {
         );
     }
 
-    //kakao api에 택시를 함께 탈 멤버 리스트를 요청 호출 방식에 맞게 작성.
-    public Map<String, Object> makePayload(List<WaitingMember> memberList) {
+    public List<WaitingMember> getOptimalOrder(List<WaitingMember> waitingMemberList) {
 
-        Map<String, Object> requestPayload = new HashMap<>();
         List<WaitingMember> optimalRoute = new ArrayList<>();
-
         //1. 4명의 출발지 - 도착지 쌍이 제일 가까운 두 명을 고른다. (출발지쪽 a, 도착지쪽 b)
         //2. a에서 가까운순으로 4명을 방문, b에서 가까운순으로 4명을 방문한다.
         //3. a의 방문순서 역순으로, b의 방문순서 정순으로 택시가 움직인다.
 
         Double minDistance = Double.MAX_VALUE;
 
-        Pair<WaitingMember, WaitingMember> startEndPair = memberList.stream()
-                .flatMap(A -> memberList.stream().map(B -> Pair.of(A, B))) // 모든 A, B 쌍 생성
+        Pair<WaitingMember, WaitingMember> startEndPair = waitingMemberList.stream()
+                .flatMap(A -> waitingMemberList.stream().map(B -> Pair.of(A, B))) // 모든 A, B 쌍 생성
                 .min(Comparator.comparingDouble(pair -> HaversineCalculator(pair.getFirst(), pair.getSecond(), "start_end"))) // 가장 가까운 쌍 찾기
                 .orElse(null);
 
@@ -99,12 +98,12 @@ public class RoomService {
         WaitingMember currentMember = startMember;
         visited.add(currentMember);
 
-        while (visited.size() < memberList.size()) {
+        while (visited.size() < waitingMemberList.size()) {
             WaitingMember nextMember = null;
             minDistance = Double.MAX_VALUE;
 
             // 가장 가까운 멤버 찾기
-            for (WaitingMember waitingMember : memberList) {
+            for (WaitingMember waitingMember : waitingMemberList) {
                 if (!visited.contains(waitingMember)) {
                     Double distance = HaversineCalculator(currentMember, waitingMember, "start");
                     if (distance < minDistance) {
@@ -126,12 +125,12 @@ public class RoomService {
         currentMember = endMember;
         visited.add(currentMember);
 
-        while (visited.size() < memberList.size()) {
+        while (visited.size() < waitingMemberList.size()) {
             WaitingMember nextMember = null;
             minDistance = Double.MAX_VALUE;
 
             // 가장 가까운 멤버 찾기
-            for (WaitingMember waitingMember : memberList) {
+            for (WaitingMember waitingMember : waitingMemberList) {
                 if (!visited.contains(waitingMember)) {
                     Double distance = HaversineCalculator(currentMember, waitingMember, "end");
                     if (distance < minDistance) {
@@ -147,23 +146,18 @@ public class RoomService {
         }
 
         optimalRoute.addAll(visited);
-
         System.out.println(optimalRoute);
+        return optimalRoute;
+    }
 
-        List<Map<String, Double>> waypoints = new ArrayList<>();
-
-        for (WaitingMember waitingMember : visited) {
-            Map<String, Double> waypoint = new HashMap<>();
-            waypoint.put("x", waitingMember.getStartX());
-            waypoint.put("y", waitingMember.getStartY());
-            waypoints.add(waypoint);
-        }
+    //kakao api에 택시를 함께 탈 멤버 리스트를 요청 호출 방식에 맞게 작성.
+    public Map<String, Object> makePayloadWithWaypoints(List<Map<String, Double>> waypoints) {
+        Map<String, Object> requestPayload = new HashMap<>();
 
         Map<String, Double> destination = waypoints.get(waypoints.size() - 1);
         waypoints.remove(waypoints.size() - 1);
         Map<String, Double> origin = waypoints.get(0);
         waypoints.remove(0);
-
 
         requestPayload.put("origin", origin);
         requestPayload.put("destination", destination);
@@ -181,6 +175,26 @@ public class RoomService {
         requestPayload.put("summary", false);// 요약 정보 제공 여부
 
         return requestPayload;
+    }
+
+    public Map<String, Object> makePayload(List<WaitingMember> memberList) {
+
+        List<WaitingMember> optimalRoute = getOptimalOrder(memberList);
+        List<Map<String, Double>> waypoints = new ArrayList<>();
+
+        for (int i = 0; i < optimalRoute.size(); i++) {
+            Map<String, Double> waypoint = new HashMap<>();
+            if (i * 2 < optimalRoute.size()) {
+                waypoint.put("x", optimalRoute.get(i).getStartX());
+                waypoint.put("y", optimalRoute.get(i).getStartY());
+            } else {
+                waypoint.put("x", optimalRoute.get(i).getEndX());
+                waypoint.put("y", optimalRoute.get(i).getEndY());
+            }
+            waypoints.add(waypoint);
+        }
+
+        return makePayloadWithWaypoints(waypoints);
     }
 
     //A와 B의 위도, 경도 기반으로 실제 거리 계산
@@ -220,41 +234,6 @@ public class RoomService {
 
         return EARTH_RADIUS * c;
     }
-
-    public Integer durationCalculator(Long userId, List<Section> sections) {
-        Integer totalDuration = 0;
-
-        WaitingMember waitingMember = waitingMemberRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(StatusCode.MEMBER_NOT_EXIST));
-
-        Double endX = waitingMember.getEndX();
-        Double endY = waitingMember.getEndY();
-
-        // 각 섹션을 순회하면서 목적지에 도달하기 전까지의 duration을 누적
-        for (Section section : sections) {
-            for (Road road : section.getRoads()) {
-                Double[] vertexes = road.getVertexes();
-                // vertexes 배열을 순회하면서 목적지 좌표와 일치하는지 확인
-                for (int i = 0; i + 1 < vertexes.length; i += 2) {
-                    Double vertexX = vertexes[i];
-                    Double vertexY = vertexes[i + 1];
-
-                    // 해당 좌표가 유저의 목적지(endX, endY)와 일치하는지 확인
-                    if (vertexX.equals(endX) && vertexY.equals(endY)) {
-                        // 현재 섹션의 duration을 포함한 총 시간을 반환
-                        totalDuration += section.getDuration();
-                        return totalDuration;
-                    }
-                }
-            }
-            // 현재 섹션의 duration을 누적
-            totalDuration += section.getDuration();
-        }
-
-        // 모든 섹션을 다 지나도 목적지에 도달하지 못한 경우 -1 반환 (에러 처리)
-        return -1;
-    }
-
 
     //매칭이 성공한 시점에 방 생성, 생성된 정보를 프론트에 넘겨줌.
     public void makeRoom(ResponseEntity<String> responseEntity, List<WaitingMember> memberList) {
@@ -304,15 +283,19 @@ public class RoomService {
         //경로가 실시간으로 바뀔 가능성도 있으므로 hashmap 자료구조에 저장되는 최초 1회는 update 되는 것도 좋을듯.
         roomRepository.save(room);
 
+        List<WaitingMember> optimalOrder = getOptimalOrder(memberList);
         //waitingmemberroom 만들기. memberList사람수만큼.
         for (WaitingMember waitingMember : memberList) {
             //금액 -> 1/n
             Integer charge = (room.getTaxiFare() + memberList.size() - 1) / memberList.size();
-            //소요 시간 -> responseEntity를 보고 알 수 있음.
-            Integer time = durationCalculator(waitingMember.getId(), Arrays.stream(route.getSections()).toList());
-
-            System.out.println("[member " + waitingMember.getId() + "] time: " + time + ", charge: " + charge);
-
+            //소요 시간 -> room을 보고 알 수 있음.
+            Integer time = 0, cnt = 0;
+            for (int i = 0; i < optimalOrder.size(); i++) {
+                if (waitingMember.getId().equals(optimalOrder.get(i).getId())) cnt++;
+                //시작점과 도착점을 모두 거쳐 내리는 지점. (cnt==2)
+                if (cnt == 2) break;
+                time += route.getSections()[i].getDuration();
+            }
             waitingMemberRoomService.makeWaitingMemberRoom(waitingMember, room, time, charge);
         }
 
@@ -510,8 +493,14 @@ public class RoomService {
     }
 
     public void ready(Long roomId, Long userId) {
+
         WaitingMemberRoom waitingMemberRoom = waitingMemberRoomRepository.findByRoom_RoomIdAndWaitingMember_Id(roomId, userId)
                 .orElseThrow(() -> new CustomException(ROOM_MEMBER_NOT_EXIST));
+
+        //잔액 부족.
+        Member member = memberRepository.findById(userId).orElseThrow(() -> new CustomException(MEMBER_NOT_EXIST));
+        if (member.getPoint() < waitingMemberRoom.getCharge()) throw new CustomException(INSUFFICIENT_POINT);
+
         waitingMemberRoom.updateReady();
         Room room = roomRepository.findById(roomId).orElseThrow(() -> new CustomException(ROOM_NOT_EXIST));
 

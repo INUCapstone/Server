@@ -21,9 +21,9 @@ public class WaitingMemberController {
 
     // 경로는 pub/match/{memberId}로 메세지를 보내야한다.
     @MessageMapping("match/{memberId}")
-    public void startMatching(@DestinationVariable Long memberId, @Payload WaitingMemberReqDto waitingMemberReqDto){
+    public void startMatching(@DestinationVariable Long memberId, @Payload WaitingMemberReqDto waitingMemberReqDto) {
         log.info("웹소켓 연결 성공");
-        waitingMemberService.createWaitingMember(memberId,waitingMemberReqDto);
+        waitingMemberService.createWaitingMember(memberId, waitingMemberReqDto);
         log.info("Waiting Member 생성 성공");
         roomService.startMatchAlgorithm(memberId);
 
