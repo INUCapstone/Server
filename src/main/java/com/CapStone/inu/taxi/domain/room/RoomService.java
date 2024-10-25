@@ -296,6 +296,9 @@ public class RoomService {
                 if (cnt == 2) break;
                 time += route.getSections()[i].getDuration();
             }
+            
+            //초 -> 분으로 변환 (반올림)
+            time = time % 60 >= 30 ? time / 60 + 1 : time / 60;
             waitingMemberRoomService.makeWaitingMemberRoom(waitingMember, room, time, charge);
         }
 

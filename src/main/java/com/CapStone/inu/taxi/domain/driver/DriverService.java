@@ -87,7 +87,8 @@ public class DriverService {
                 //시작점이 기사님이 픽업하는 지점. (cnt==1)
                 if (cnt == 1) break;
             }
-            pickupTimes.add(time);
+            //초 -> 분으로 변환 (반올림)
+            pickupTimes.add(time % 60 >= 30 ? time / 60 + 1 : time / 60);
         }
 
         return pickupTimes;
