@@ -52,6 +52,29 @@ public class RoomService {
     private HashMap<Long, HashSet<Pair<Long, Long>>> matched_3 = new HashMap<>();
     private HashMap<Long, HashSet<List<Long>>> matched_4 = new HashMap<>();
 
+    public void printHashMap(){
+        log.info("matched_2:");
+        matched_2.forEach((key, value) -> log.info("Key: {}, Value: {}", key, value));
+
+        log.info("\nmatched_3:");
+        matched_3.forEach((key, valueSet) -> {
+            StringBuilder values = new StringBuilder();
+            valueSet.forEach(pair -> values.append("[").append(pair.getFirst()).append(", ").append(pair.getSecond()).append("] "));
+            log.info("Key: {}, Value: {}", key, values.toString());
+        });
+
+        log.info("\nmatched_4:");
+        matched_4.forEach((key, valueSet) -> {
+            StringBuilder values = new StringBuilder();
+            valueSet.forEach(list -> values.append(list).append(" "));
+            log.info("Key: {}, Value: {}", key, values.toString());
+        });
+    }
+    }
+
+
+
+
     @Value("${kakao.api.key}")
     private String kakaoApiKey;
 
