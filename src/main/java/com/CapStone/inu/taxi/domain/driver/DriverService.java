@@ -123,4 +123,9 @@ public class DriverService {
         for (int i = 0; i < waitingMemberList.size(); i++)
             template.convertAndSend("/sub/taxi/" + waitingMemberList.get(i).getId(), DriverRes.from(driver, pickupTimes.get(i)));
     }
+
+    public void arrive(Long driverId){
+        Driver driver=driverRepository.findById(driverId).orElseThrow(() -> new CustomException(DRIVER_NOT_EXIST));
+        driver.setState(State.STAND);
+    }
 }
