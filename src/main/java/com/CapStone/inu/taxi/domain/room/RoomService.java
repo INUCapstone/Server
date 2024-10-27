@@ -70,10 +70,6 @@ public class RoomService {
             log.info("Key: {}, Value: {}", key, values.toString());
         });
     }
-    }
-
-
-
 
     @Value("${kakao.api.key}")
     private String kakaoApiKey;
