@@ -507,6 +507,10 @@ public class RoomService {
         matched_3.forEach((key, value) -> value.removeIf(userIds ->
                 userId.equals(userIds.getFirst()) || userId.equals(userIds.getSecond())));
         matched_4.forEach((key, value) -> value.removeIf(userIds -> userIds.stream().anyMatch(userId::equals)));
+
+        matched_2.remove(userId);
+        matched_3.remove(userId);
+        matched_4.remove(userId);
     }
 
     public void stopMatchAlgorithm(Long userId) {
