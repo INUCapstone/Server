@@ -38,6 +38,9 @@ public class WaitingMemberController {
         // 세션 속성에서 memberId를 가져옵니다.
         Long memberId = Long.parseLong((String) headerAccessor.getSessionAttributes().get("memberId"));
         waitingMemberService.cancelMatching(memberId);
+
+        roomService.printHashMap();
+
         log.info("Waiting Member 삭제 성공");
 
     }
